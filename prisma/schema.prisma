@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL_POOLED")
+  directUrl = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+}
+
+enum CarCategory {
+  HATCHBACK
+  SEDAN
+  MPV
+  SUV
+}
+
+enum BookingStatus {
+  NEW
+  CONTACTED
+  CONFIRMED
+  COMPLETED
+  CLOSED
+  CANCELLED
+}
+
+// Historical customer/rating records are retained for data preservation only.
+// Customer login, sessions, OAuth and rating submission are no longer exposed by the application.
+model Customer {
+  id        String            @id @default(cuid())
+  googleId  String            @unique
+  email     String
+  name      String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sessions  CustomerSession[]
+  bookings  BookingIntent[]
+
+  @@index([email])
+}
+
+model CustomerSession {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model CustomerOAuthState {
+  tokenHash    String   @id
+  codeVerifier String
+  nonce        String
+  returnTo     String
+  expiresAt    DateTime
+
+  @@index([expiresAt])
+}
+
+model AdminUser {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         Role       @default(ADMIN)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  sessions     Session[]
+  audits       AuditLog[]
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
+model LoginThrottle {
+  id       String   @id
+  attempts Int      @default(0)
+  resetAt  DateTime
+}
+
+model Car {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  name          String
+  category      CarCategory
+  description   String          @default("")
+  seats         Int             @default(5)
+  fuel          String          @default("Petrol")
+  transmission  String          @default("Manual")
+  mileage       String          @default("")
+  bootSpace     String          @default("")
+  engine        String          @default("")
+  imageUrl      String          @default("/cars/placeholder.svg")
+  gallery       String[]        @default([])
+  rating        Float?
+  price12h      Int             @default(0)
+  priceDay      Int
+  price3Days    Int             @default(0)
+  priceWeek     Int             @default(0)
+  extraKmRate   Int             @default(6)
+  extraHourRate Int             @default(200)
+  includedKm    Int             @default(350)
+  deposit       Int             @default(0)
+  featured      Boolean         @default(false)
+  available     Boolean         @default(true)
+  published     Boolean         @default(true)
+  sortOrder     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  bookings      BookingIntent[]
+
+  @@index([published, category, sortOrder])
+}
+
+model Location {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  subtitle    String  @default("")
+  description String  @default("")
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+}
+
+model Faq {
+  id        String  @id @default(cuid())
+  question  String
+  answer    String
+  published Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  area      String   @default("")
+  carName   String   @default("")
+  text      String
+  rating    Int      @default(5)
+  verified  Boolean  @default(false)
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SiteSettings {
+  id             String @id @default("main")
+  businessName   String @default("Universal Self Drive Cars")
+  whatsappNumber String @default("919700093666")
+  phoneNumber    String @default("+91 97000 93666")
+  contactEmail   String @default("info@universalselfdrivecars.in")
+  address        String @default("Vanasthalipuram, Hyderabad")
+  mapsUrl        String @default("https://www.google.com/maps/search/?api=1&query=Vanasthalipuram+Hyderabad")
+  headline       String @default("Drive Your Way. No Deposit.")
+  description    String @default("Self-drive cars in Hyderabad. Zero security deposit and convenient doorstep delivery.")
+}
+
+model BookingIntent {
+  id             String        @id @default(cuid())
+  carId          String
+  car            Car           @relation(fields: [carId], references: [id], onDelete: Restrict)
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  rating         CarRating?
+  customerName   String
+  customerPhone  String
+  pickupLocation String
+  pickupDate     DateTime?
+  returnDate     DateTime?
+  notes          String        @default("")
+  status         BookingStatus @default(NEW)
+  createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId, createdAt])
+}
+
+model CarRating {
+  bookingId String        @id
+  booking   BookingIntent @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  score     Int
+  createdAt DateTime      @default(now())
+}
+
+model AuditLog {
+  id         String     @id @default(cuid())
+  userId     String?
+  user       AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String
+  createdAt  DateTime   @default(now())
+
+  @@index([createdAt])
+}

@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.npm-cache/
+coverage/
+dist/
+out/
+public/
+.env
+.env.*
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo
+# Applied migrations must keep their original checksums.
+prisma/migrations/

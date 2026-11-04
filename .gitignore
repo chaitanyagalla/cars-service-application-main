@@ -1,0 +1,9 @@
+node_modules
+.npm-cache
+.next
+.env
+.env.local
+.env.production
+*.log
+*.tsbuildinfo
+.DS_Store
