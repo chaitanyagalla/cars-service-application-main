@@ -1,19 +1,22 @@
 'use client';
 import { useState } from 'react';
+import { toast } from '@heroui/react';
+import { useFeedback } from '@/components/app-feedback';
 
 export function LogoutButton() {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const { requestLeave, cancelLeave } = useFeedback();
   async function logout() {
     if (busy) return;
+    if (!(await requestLeave())) return;
     setBusy(true);
-    setError('');
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
       if (!response.ok) throw new Error('Unable to sign out');
       window.location.assign('/admin/login');
     } catch {
-      setError('Unable to sign out. Please try again.');
+      cancelLeave();
+      toast.danger('Unable to sign out', { description: 'Please try again.', timeout: 8000 });
       setBusy(false);
     }
   }
@@ -22,11 +25,6 @@ export function LogoutButton() {
       <button type="button" className="small-btn" onClick={logout} disabled={busy}>
         {busy ? 'Signing out...' : 'Sign out'}
       </button>
-      {error && (
-        <p role="alert" className="form-error">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

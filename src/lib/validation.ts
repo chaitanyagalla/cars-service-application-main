@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { validNewPassword } from './passwords';
+import { formatLocationName } from './location-names';
 const text = (max = 255) => z.string().trim().min(1).max(max);
 const optional = (max = 255) => z.string().trim().max(max).default('');
 const bool = z.boolean();
@@ -14,7 +15,6 @@ const image = z
   );
 export const carSchema = z.object({
   name: text(120),
-  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   category: z.enum(['HATCHBACK', 'SEDAN', 'MPV', 'SUV']),
   description: optional(4000),
   seats: z.number().int().min(1).max(20),
@@ -39,11 +39,11 @@ export const carSchema = z.object({
   sortOrder: number,
 });
 export const locationSchema = z.object({
-  name: text(100),
+  name: z.string().transform(formatLocationName).pipe(text(100)),
   subtitle: optional(100),
   description: optional(500),
   active: bool,
-  sortOrder: number,
+  sortOrder: number.optional(),
 });
 export const faqSchema = z.object({
   question: text(250),

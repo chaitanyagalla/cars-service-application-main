@@ -1,14 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { Button } from '@heroui/react';
+import { Button, toast } from '@heroui/react';
 export function AdminLogin() {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    setError('');
     const form = new FormData(e.currentTarget);
     try {
       const res = await fetch('/api/auth/login', {
@@ -20,7 +18,10 @@ export function AdminLogin() {
       if (!res.ok) throw new Error(data.error || 'Could not sign in');
       window.location.assign('/admin');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      toast.danger('Could not sign in', {
+        description: err instanceof Error ? err.message : 'Please try again.',
+        timeout: 8000,
+      });
       setBusy(false);
     }
   }
@@ -58,11 +59,6 @@ export function AdminLogin() {
           autoComplete="current-password"
         />
       </label>
-      {error && (
-        <p role="alert" style={{ color: '#ff8a8a' }}>
-          {error}
-        </p>
-      )}
       <Button className="hero-ui-btn" type="submit" fullWidth isPending={busy}>
         {busy ? 'Signing in...' : 'Sign In'}
       </Button>

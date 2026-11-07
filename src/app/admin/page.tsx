@@ -16,12 +16,12 @@ export default async function AdminDashboard() {
     ['Available Cars', live, 'cars'],
     ['Service Areas', locations, 'locations'],
     ['Enquiries', leads, 'bookings'],
-    ['New Leads', open, 'bookings'],
+    ['New Leads', open, 'bookings?status=NEW'],
     ['Published Reviews', reviews, 'testimonials'],
   ];
   const recent = await prisma.bookingIntent.findMany({
     include: { car: { select: { name: true } } },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: 8,
   });
   return (
@@ -56,12 +56,16 @@ export default async function AdminDashboard() {
           <tbody>
             {recent.map((r) => (
               <tr key={r.id}>
-                <td>{r.customerName}</td>
+                <td>
+                  <Link className="small-btn" href={`/admin/bookings/${encodeURIComponent(r.id)}`}>
+                    {r.customerName}
+                  </Link>
+                </td>
                 <td>{r.car.name}</td>
                 <td>{r.customerPhone}</td>
                 <td>{r.pickupLocation}</td>
                 <td>{r.status}</td>
-                <td>{r.createdAt.toLocaleDateString('en-IN')}</td>
+                <td>{r.createdAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
               </tr>
             ))}
           </tbody>
