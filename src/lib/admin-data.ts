@@ -1,4 +1,7 @@
 import { prisma } from './db';
+import { listAdminRecords } from './admin-records';
+import { parseAdminQuery } from './admin-query';
+import { locationOrderBy } from './location-names';
 import {
   carSchema,
   locationSchema,
@@ -38,17 +41,13 @@ export async function listResource(resource: Resource) {
     case 'cars':
       return prisma.car.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] });
     case 'locations':
-      return prisma.location.findMany({ orderBy: { sortOrder: 'asc' } });
+      return prisma.location.findMany({ orderBy: [...locationOrderBy] });
     case 'faqs':
       return prisma.faq.findMany({ orderBy: { sortOrder: 'asc' } });
     case 'testimonials':
       return prisma.testimonial.findMany({ orderBy: { createdAt: 'desc' } });
     case 'bookings':
-      return prisma.bookingIntent.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 300,
-        include: { car: { select: { name: true } } },
-      });
+      return (await listAdminRecords('bookings', parseAdminQuery(new URLSearchParams()))).rows;
     case 'settings':
       return prisma.siteSettings.findMany();
     case 'users':
@@ -57,11 +56,7 @@ export async function listResource(resource: Resource) {
         orderBy: { createdAt: 'asc' },
       });
     case 'audits':
-      return prisma.auditLog.findMany({
-        include: { user: { select: { email: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 300,
-      });
+      return (await listAdminRecords('audits', parseAdminQuery(new URLSearchParams()))).rows;
   }
 }
 export const validators = {

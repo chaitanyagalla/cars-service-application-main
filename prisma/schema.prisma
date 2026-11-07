@@ -136,6 +136,14 @@ model Location {
   sortOrder   Int     @default(0)
 }
 
+// Preserves the complete originals when the name-uniqueness migration merges duplicates.
+model LocationDuplicateArchive {
+  id             String   @id
+  keptLocationId String
+  original       Json
+  archivedAt     DateTime @default(now())
+}
+
 model Faq {
   id        String  @id @default(cuid())
   question  String

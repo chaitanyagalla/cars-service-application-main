@@ -1,15 +1,16 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 
 const mocks = vi.hoisted(() => ({
   cookies: new Map<string, string>(),
   db: {
     session: { findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
     adminUser: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
-    auditLog: { create: vi.fn(), findMany: vi.fn() },
+    auditLog: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
     bookingIntent: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
-    car: { findUnique: vi.fn() },
+    car: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
   },
@@ -32,6 +33,7 @@ import { GET as exportBookings } from '../src/app/api/admin/bookings/export/rout
 import { POST as upload } from '../src/app/api/admin/uploads/route';
 import { COOKIE, currentAdmin, hashToken, sameOrigin, readJsonBody } from '../src/lib/security';
 import { createAdminToken, verifyAdminToken } from '../src/lib/admin-jwt';
+import { carSlugFromName, suggestCarSlug } from '../src/lib/car-slugs';
 
 const password = 'assigned-by-the-business';
 let passwordHash: string;
@@ -71,6 +73,7 @@ beforeEach(() => {
   mocks.db.adminUser.create.mockResolvedValue({ id: 'admin-2' });
   mocks.db.adminUser.findMany.mockResolvedValue([]);
   mocks.db.auditLog.findMany.mockResolvedValue([]);
+  mocks.db.auditLog.count.mockResolvedValue(0);
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -221,7 +224,9 @@ describe('server-side admin RBAC and session revocation', () => {
         ).status,
       ).toBe(401);
     }
-    expect((await exportBookings()).status).toBe(401);
+    expect(
+      (await exportBookings(new Request('http://localhost:3000/api/admin/bookings/export'))).status,
+    ).toBe(401);
     expect((await upload(req('/api/admin/uploads', {}))).status).toBe(401);
   });
   it('allows ADMIN to read staff users and audits', async () => {
@@ -296,6 +301,180 @@ describe('server-side admin RBAC and session revocation', () => {
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
     mocks.db.session.findUnique.mockResolvedValue(null);
     expect(await currentAdmin()).toBeNull();
+  });
+});
+
+describe('automatic car URLs', () => {
+  const carInput = {
+    name: 'Maruti Swift',
+    category: 'HATCHBACK',
+    seats: 5,
+    fuel: 'Petrol',
+    transmission: 'Manual',
+    imageUrl: 'https://res.cloudinary.com/demo/image/upload/swift.webp',
+    gallery: [],
+    price12h: 0,
+    priceDay: 1999,
+    price3Days: 0,
+    priceWeek: 0,
+    extraKmRate: 6,
+    extraHourRate: 200,
+    includedKm: 350,
+    deposit: 0,
+    featured: false,
+    available: true,
+    published: true,
+    sortOrder: 0,
+  };
+  const createParams = () => ({ params: Promise.resolve({ resource: 'cars' }) });
+  const updateParams = () => ({ params: Promise.resolve({ resource: 'cars', id: 'car-1' }) });
+
+  beforeEach(() => {
+    mocks.db.car.findMany.mockResolvedValue([]);
+    mocks.db.car.create.mockResolvedValue({ id: 'new-car' });
+  });
+
+  function slugCollision() {
+    return new Prisma.PrismaClientKnownRequestError('Duplicate car slug', {
+      code: 'P2002',
+      clientVersion: '6.19.3',
+      meta: { target: ['slug'] },
+    });
+  }
+
+  it('creates a car without a submitted slug and retains its uploaded cover URL', async () => {
+    await signedIn();
+    const response = await adminCreate(req('/api/admin/cars', carInput), createParams());
+    expect(response.status).toBe(201);
+    expect(mocks.db.car.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ slug: 'maruti-swift', imageUrl: carInput.imageUrl }),
+    });
+    expect(mocks.db.auditLog.create).toHaveBeenCalledWith({
+      data: { userId: admin.id, action: 'CREATE', resource: 'cars', resourceId: 'new-car' },
+    });
+  });
+
+  it('chooses the next free suffix when cars already have the same name', async () => {
+    await signedIn();
+    mocks.db.car.findMany.mockResolvedValue([{ slug: 'maruti-swift' }, { slug: 'maruti-swift-2' }]);
+    const response = await adminCreate(req('/api/admin/cars', carInput), createParams());
+    expect(response.status).toBe(201);
+    expect(mocks.db.car.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ slug: 'maruti-swift-3' }),
+    });
+  });
+
+  it('does not let a client choose the generated URL', async () => {
+    await signedIn();
+    const response = await adminCreate(
+      req('/api/admin/cars', { ...carInput, slug: 'client-chosen-url' }),
+      createParams(),
+    );
+    expect(response.status).toBe(201);
+    expect(mocks.db.car.create.mock.calls[0][0].data.slug).toBe('maruti-swift');
+  });
+
+  it('keeps the stored URL when renaming a car, even if the client submits a slug', async () => {
+    await signedIn();
+    const response = await adminUpdate(
+      req('/api/admin/cars/car-1', { ...carInput, name: 'Renamed Swift', slug: 'replace-old-url' }),
+      updateParams(),
+    );
+    expect(response.status).toBe(200);
+    const update = mocks.db.car.update.mock.calls[0][0];
+    expect(update.where).toEqual({ id: 'car-1' });
+    expect(update.data.name).toBe('Renamed Swift');
+    expect(update.data).not.toHaveProperty('slug');
+    expect(mocks.db.car.create).not.toHaveBeenCalled();
+  });
+
+  it('recovers when another request inserts a slug after the availability query', async () => {
+    await signedIn();
+    mocks.db.car.create
+      .mockRejectedValueOnce(slugCollision())
+      .mockResolvedValueOnce({ id: 'new-car' });
+    const response = await adminCreate(req('/api/admin/cars', carInput), createParams());
+    expect(response.status).toBe(201);
+    expect(mocks.db.car.create.mock.calls.map(([arg]) => arg.data.slug)).toEqual([
+      'maruti-swift',
+      'maruti-swift-2',
+    ]);
+    expect(mocks.db.auditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates distinct URLs for simultaneous same-name requests', async () => {
+    await signedIn();
+    const inserted = new Set<string>();
+    mocks.db.car.create.mockImplementation(async ({ data }: { data: { slug: string } }) => {
+      if (inserted.has(data.slug)) throw slugCollision();
+      inserted.add(data.slug);
+      return { id: data.slug };
+    });
+    const responses = await Promise.all([
+      adminCreate(req('/api/admin/cars', carInput), createParams()),
+      adminCreate(req('/api/admin/cars', carInput), createParams()),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
+    expect([...inserted]).toEqual(['maruti-swift', 'maruti-swift-2']);
+    expect(mocks.db.auditLog.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses a generated fallback when the name has no Latin letters or digits', async () => {
+    await signedIn();
+    const response = await adminCreate(
+      req('/api/admin/cars', { ...carInput, name: '🚗🚙' }),
+      createParams(),
+    );
+    expect(response.status).toBe(201);
+    expect(mocks.db.car.create.mock.calls[0][0].data.slug).toMatch(/^car-[a-f0-9]{8}$/);
+  });
+
+  it('bounds collision retries and returns a useful error instead of asking for a slug', async () => {
+    await signedIn();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      mocks.db.car.create.mockRejectedValue(slugCollision());
+      const response = await adminCreate(req('/api/admin/cars', carInput), createParams());
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ error: 'Could not save changes' });
+      expect(mocks.db.car.create).toHaveBeenCalledTimes(5);
+      expect(mocks.db.car.create.mock.calls[4][0].data.slug).toMatch(/^maruti-swift-[a-f0-9]{8}$/);
+      expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('does not retry unique constraint errors on another field', async () => {
+    await signedIn();
+    mocks.db.car.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Duplicate id', {
+        code: 'P2002',
+        clientVersion: '6.19.3',
+        meta: { target: ['id'] },
+      }),
+    );
+    const response = await adminCreate(req('/api/admin/cars', carInput), createParams());
+    expect(response.status).toBe(409);
+    expect(mocks.db.car.create).toHaveBeenCalledTimes(1);
+    expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['  Maruti Swift Automatic  ', 'maruti-swift-automatic'],
+    ['Škoda & Citroën / 2026', 'skoda-citroen-2026'],
+    ['Swift---VXI!!!', 'swift-vxi'],
+    ['Swift 2026', 'swift-2026'],
+    ['🚗🚙', ''],
+  ])('normalizes %s to %s', (name, expected) => {
+    expect(carSlugFromName(name)).toBe(expected);
+  });
+
+  it('suggests an unused suffix without rewriting meaningful numbers in the slug', () => {
+    expect(suggestCarSlug('maruti-swift', ['maruti-swift', 'maruti-swift-2'])).toBe(
+      'maruti-swift-3',
+    );
+    expect(suggestCarSlug('swift-2026', ['swift-2026'])).toBe('swift-2026-2');
   });
 });
 

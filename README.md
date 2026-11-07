@@ -52,7 +52,7 @@ See [the implementation and setup walkthrough](docs/authentication.md) for the l
 
 At `/admin` dashboard: fleet/area/lead/review counters, recent enquiries.
 
-- **Cars:** add/edit/delete cars, publish/unpublish, mark unavailable, price tiers, km/hour charges, photos (HTTPS URL or optional authenticated Cloudinary upload), gallery (URL list), specifications, order and featured label. Delete is blocked for cars with enquiries; unpublish instead.
+- **Cars:** add/edit/delete cars, publish/unpublish, mark unavailable, price tiers, km/hour charges, photos (HTTPS URL or optional authenticated Cloudinary upload), gallery (URL list), specifications, order and featured label. Car page URLs are generated automatically from the name, with unique suffixes for duplicate names; editing a car keeps its existing URL. Toasts report save/delete results and image upload progress, success or failure. Delete is blocked for cars with enquiries; unpublish instead.
 - **Locations:** create/edit/delete delivery areas, toggle active.
 - **FAQs:** manage and publish question/answer sections.
 - **Testimonials:** draft/edit and publish only genuine reviews with customer permission; optional verification flag. Sample testimonials are _not_ seeded.

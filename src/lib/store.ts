@@ -1,5 +1,6 @@
 import { prisma } from './db';
 import { withCarRatings } from './car-ratings';
+import { locationOrderBy } from './location-names';
 export const getSettings = () =>
   prisma.siteSettings.findUnique({ where: { id: 'main' } }).then(
     (s) =>
@@ -24,7 +25,7 @@ export const getCars = async () =>
     }),
   );
 export const getLocations = () =>
-  prisma.location.findMany({ where: { active: true }, orderBy: { sortOrder: 'asc' } });
+  prisma.location.findMany({ where: { active: true }, orderBy: [...locationOrderBy] });
 export const getFaqs = () =>
   prisma.faq.findMany({ where: { published: true }, orderBy: { sortOrder: 'asc' } });
 export const getTestimonials = () =>

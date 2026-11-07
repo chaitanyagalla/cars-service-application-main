@@ -1,20 +1,21 @@
 'use client';
 import { useState } from 'react';
-import { Button } from '@heroui/react';
+import { Button, toast } from '@heroui/react';
 export function BookingForm({ carId }: { carId: string }) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
-    setError('');
     setBusy(true);
     const form = new FormData(e.currentTarget);
     const get = (k: string) => String(form.get(k) || '').trim();
     const pickup = get('pickupDate');
     const drop = get('returnDate');
     if ((pickup || drop) && (!pickup || !drop)) {
-      setError('Enter both pickup and return date/time.');
+      toast.warning('Check your dates', {
+        description: 'Enter both pickup and return date/time.',
+        timeout: 8000,
+      });
       setBusy(false);
       return;
     }
@@ -37,7 +38,10 @@ export function BookingForm({ carId }: { carId: string }) {
       if (!response.ok) throw new Error(data.error || 'Could not prepare booking');
       window.location.assign(data.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Please try again.');
+      toast.danger('Could not prepare your enquiry', {
+        description: err instanceof Error ? err.message : 'Please try again.',
+        timeout: 8000,
+      });
       setBusy(false);
     }
   }
@@ -95,11 +99,6 @@ export function BookingForm({ carId }: { carId: string }) {
         <textarea className="input" name="notes" rows={3} maxLength={500} />
       </label>
       <div className="full">
-        {error && (
-          <p role="alert" style={{ color: '#ff8c84' }}>
-            {error}
-          </p>
-        )}
         <Button className="hero-ui-btn" type="submit" isPending={busy} fullWidth>
           {busy ? 'Preparing enquiry...' : 'Save enquiry & open WhatsApp →'}
         </Button>
