@@ -79,7 +79,7 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
                 <span className="eyebrow">{car.category}</span>
               </div>
               <h1
-                className="serif"
+                className="display"
                 style={{ fontSize: 'clamp(40px,5vw,60px)', margin: '0 0 16px' }}
               >
                 {car.name}
@@ -116,9 +116,9 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: '#0b0a16' }}>
+      <section className="section" style={{ background: 'var(--panel2)' }}>
         <div className="container">
-          <h2 className="serif">Specifications</h2>
+          <h2 className="display">Specifications</h2>
           <p className="sub" style={{ margin: '0 0 35px' }}>
             Technical details and available features
           </p>
@@ -138,7 +138,7 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
       <section className="section">
         <div className="container">
           <div className="center">
-            <h2 className="serif">Flexible Pricing</h2>
+            <h2 className="display">Flexible Pricing</h2>
             <p className="sub">Choose the duration that works best for your trip</p>
           </div>
           <div className="pricing-grid">
@@ -170,9 +170,9 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: '#0c0b17' }}>
+      <section className="section" style={{ background: 'var(--panel2)' }}>
         <div className="container">
-          <h2 className="serif">What&apos;s Included</h2>
+          <h2 className="display">What&apos;s Included</h2>
           <p className="sub" style={{ margin: '0 0 35px' }}>
             Confirm specific inclusions, eligibility and conditions before payment.
           </p>
@@ -195,7 +195,7 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
       </section>
       <section className="section">
         <div className="container">
-          <h2 className="serif">Customer ratings</h2>
+          <h2 className="display">Customer ratings</h2>
           {car.ratingCount ? (
             <p className="rating" style={{ fontSize: 22 }}>
               ★ {car.rating!.toFixed(1)} / 5{' '}
@@ -220,7 +220,7 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
       {related.length > 0 && (
         <section className="section">
           <div className="container">
-            <h2 className="serif">Similar Cars</h2>
+            <h2 className="display">Similar Cars</h2>
             <p className="sub" style={{ margin: '0 0 35px' }}>
               You might also like these vehicles
             </p>

@@ -1,21 +1,22 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   CarFront,
-  Users,
   MapPin,
-  ShieldCheck,
-  Clock3,
   CalendarDays,
-  Truck,
   CheckCircle2,
   MessageCircle,
   Phone,
   Mail,
-  Shield,
-  Check,
+  ArrowRight,
+  BadgeCheck,
+  Tag,
+  Headset,
+  Star,
 } from 'lucide-react';
 import CustomerLayout from '@/components/customer-layout';
 import { CarCard } from '@/components/site-shell';
+import FleetCarousel from '@/components/fleet-carousel';
 import { getCars, getSettings, getLocations, getFaqs, getTestimonials } from '@/lib/store';
 export const dynamic = 'force-dynamic';
 export default async function HomePage() {
@@ -26,84 +27,83 @@ export default async function HomePage() {
     getFaqs(),
     getTestimonials(),
   ]);
-  const stats = [
-    { icon: CarFront, value: `${cars.length}+`, label: 'Cars listed' },
-    { icon: Users, value: 'Easy', label: 'WhatsApp booking' },
-    { icon: MapPin, value: `${locations.length}`, label: 'Service areas' },
-    {
-      icon: ShieldCheck,
-      value: cars.some((c) => c.deposit === 0) ? '₹0' : 'Varies',
-      label: 'Security deposit',
-    },
-  ];
+  const useReferenceHeadline = settings.headline === 'Drive Your Way. No Deposit.';
   return (
     <CustomerLayout>
-      <section className="hero">
-        <div className="container">
-          <div className="eyebrow">★ Self-Drive Car Rentals in Hyderabad</div>
-          <h1 className="serif">
-            {settings.headline.includes('No Deposit.') ? (
-              <>
-                {settings.headline.split('No Deposit.')[0]}
-                <span className="gold-text">No Deposit.</span>
-              </>
-            ) : (
-              settings.headline
-            )}
-          </h1>
-          <p className="sub">{settings.description}</p>
-          <div className="actions">
-            <Link className="btn btn-gold" href="/cars">
-              Explore Cars →
-            </Link>
-            <a className="btn btn-outline" href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}>
-              <Phone size={17} /> Call Now
-            </a>
-          </div>
-          <div className="hero-metrics">
-            <div>
-              <strong>{cars.length}+</strong>
-              <span>Cars listed</span>
-            </div>
-            <div>
-              <strong>{cars.some((c) => c.deposit === 0) ? '₹0' : 'Varies'}</strong>
-              <span>Security deposit</span>
-            </div>
-            <div>
-              <strong>{locations.length}</strong>
-              <span>Service areas</span>
-            </div>
-          </div>
+      <section className="hero" aria-labelledby="hero-heading">
+        <div className="hero-art">
+          <Image
+            src="/images/hyderabad-drive-light.webp"
+            alt="A black SUV on a Hyderabad road with Charminar in the background"
+            fill
+            sizes="(max-width: 760px) 100vw, 56vw"
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
-      </section>
-      <section className="section-compact">
-        <div className="container stats-grid">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <div className="stat-icon">
-                <s.icon size={28} />
-              </div>
-              <div className="stat-value">{s.value}</div>
-              <strong>{s.label}</strong>
+        <div className="container hero-inner">
+          <div className="hero-copy">
+            <div className="eyebrow hero-eyebrow">
+              <Star size={16} fill="currentColor" aria-hidden="true" />
+              Trusted Car Rentals in Hyderabad
             </div>
-          ))}
+            <h1 className="display" id="hero-heading">
+              {useReferenceHeadline ? (
+                <>
+                  <span>Freedom to drive.</span>
+                  <span>Without the extra cost.</span>
+                </>
+              ) : (
+                settings.headline
+              )}
+            </h1>
+            <p className="sub">
+              {useReferenceHeadline
+                ? 'Choose from premium self-drive cars with zero deposit, clear pricing, and smooth pickup or delivery.'
+                : settings.description}
+            </p>
+            <div className="actions">
+              <Link className="btn btn-gold" href="/cars">
+                Explore Cars <ArrowRight size={21} aria-hidden="true" />
+              </Link>
+              <a
+                className="btn btn-outline"
+                href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Hi, I would like a quote for a self-drive car in Hyderabad.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Get a Quote
+              </a>
+            </div>
+            <ul className="hero-benefits" aria-label="Rental benefits">
+              <li>
+                <BadgeCheck size={26} aria-hidden="true" /> Verified Fleet
+              </li>
+              <li>
+                <Tag size={26} aria-hidden="true" /> No Hidden Charges
+              </li>
+              <li>
+                <Headset size={26} aria-hidden="true" /> Instant Support
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
       <section className="section" id="cars">
         <div className="container">
           <div className="center">
             <span className="eyebrow">Our Fleet</span>
-            <h2 className="serif">Choose Your Perfect Ride</h2>
+            <h2 className="display">Choose Your Perfect Ride</h2>
             <p className="sub">
               From fuel-efficient hatchbacks to spacious SUVs, find the car that suits your next
               journey.
             </p>
           </div>
-          <div className="car-grid">
-            {cars.slice(0, 6).map((c) => (
+          <FleetCarousel>
+            {cars.map((c) => (
               <CarCard key={c.id} car={c} />
             ))}
-          </div>
+          </FleetCarousel>
           <div className="center" style={{ marginTop: 35 }}>
             <Link className="btn btn-gold" href="/cars">
               View All Cars →
@@ -111,49 +111,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      <section className="section">
-        <div className="container">
-          <div className="center">
-            <span className="eyebrow">Why Choose Us</span>
-            <h2 className="serif">Drive the Premium. Travel with Freedom.</h2>
-            <p className="sub">
-              Flexible self-drive options with a customer-first booking experience.
-            </p>
-          </div>
-          <div className="feature-grid">
-            {[
-              {
-                icon: Clock3,
-                title: 'Flexible Pickup',
-                text: 'Choose a suitable pickup time and discuss delivery arrangements with our team.',
-              },
-              {
-                icon: MapPin,
-                title: 'Areas Across Hyderabad',
-                text: 'Enquire about doorstep delivery in our listed Hyderabad service areas.',
-              },
-              {
-                icon: CarFront,
-                title: 'Well-Maintained Fleet',
-                text: 'Browse hatchbacks, sedans, MPVs and SUVs with clear car-specific pricing.',
-              },
-            ].map((f) => (
-              <div className="panel feature" key={f.title}>
-                <div className="feature-icon">
-                  <f.icon size={29} />
-                </div>
-                <h3>{f.title}</h3>
-                <p>{f.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="section" style={{ background: '#0c0b17' }}>
+      <section className="section" style={{ background: 'var(--panel2)' }}>
         <div className="container">
           <div className="center">
             <span className="eyebrow">How It Works</span>
-            <h2 className="serif">Book in 4 Simple Steps</h2>
+            <h2 className="display">Book in 4 Simple Steps</h2>
             <p className="sub">Your journey starts with a simple enquiry.</p>
           </div>
           <div className="steps">
@@ -196,7 +158,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">Delivery Locations</span>
-            <h2 className="serif">Doorstep Delivery Across Hyderabad</h2>
+            <h2 className="display">Doorstep Delivery Across Hyderabad</h2>
             <p className="sub">Contact our team to check delivery availability for your area.</p>
           </div>
           <div className="location-grid">
@@ -216,11 +178,11 @@ export default async function HomePage() {
         </div>
       </section>
       {reviews.length > 0 && (
-        <section className="section" style={{ background: '#0c0b17' }}>
+        <section className="section" style={{ background: 'var(--panel2)' }}>
           <div className="container">
             <div className="center">
               <span className="eyebrow">Customer Reviews</span>
-              <h2 className="serif">What Our Customers Say</h2>
+              <h2 className="display">What Our Customers Say</h2>
               <p className="sub">Customer feedback shared with permission.</p>
             </div>
             <div className="review-grid">
@@ -245,7 +207,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">FAQ</span>
-            <h2 className="serif">Common Questions About Our Self-Drive Cars</h2>
+            <h2 className="display">Common Questions About Our Self-Drive Cars</h2>
             <p className="sub">Quick answers before you hit the road.</p>
           </div>
           <div className="faq-list">
@@ -267,7 +229,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">Get In Touch</span>
-            <h2 className="serif">Ready to Get Started?</h2>
+            <h2 className="display">Ready to Get Started?</h2>
             <p className="sub">Visit our location or contact us for a personalised quotation.</p>
           </div>
           <div className="detail-hero">
@@ -321,7 +283,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="cta">
             <span className="eyebrow">Ready to Hit the Road?</span>
-            <h2 className="serif">Your Next Trip Starts Here</h2>
+            <h2 className="display">Your Next Trip Starts Here</h2>
             <p className="sub">
               Choose your car, ask about availability, and confirm the details directly with our
               team.

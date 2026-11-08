@@ -11,7 +11,7 @@ export default async function LocationsPage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">Delivery Locations</span>
-            <h1 className="serif" style={{ fontSize: 55 }}>
+            <h1 className="display" style={{ fontSize: 55 }}>
               Self-Drive Delivery Across Hyderabad
             </h1>
             <p className="sub">
