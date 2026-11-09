@@ -5,6 +5,7 @@ import type { SiteSettings } from '@prisma/client';
 import { whatsAppUrl } from '@/lib/whatsapp';
 import type { Car } from '@prisma/client';
 import type { RatedCar } from '@/lib/car-ratings';
+import MobileNavigation from './mobile-navigation';
 
 export function WhatsAppIcon({ size = 24 }: { size?: number }) {
   return (
@@ -59,6 +60,7 @@ export function Header({ settings }: { settings: SiteSettings }) {
           <Link className="btn btn-gold" href="/cars">
             Book Now
           </Link>
+          <MobileNavigation links={nav} />
         </div>
       </div>
       <nav className="mobile-nav container" aria-label="Mobile navigation">

@@ -28,7 +28,7 @@ export function AdminLogin() {
   return (
     <form
       onSubmit={submit}
-      className="panel"
+      className="panel admin-login-panel"
       style={{ maxWidth: 440, margin: '80px auto', padding: 34 }}
     >
       <h1 className="display" style={{ fontSize: 38, marginBottom: 7 }}>

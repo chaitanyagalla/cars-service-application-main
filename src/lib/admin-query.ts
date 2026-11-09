@@ -15,7 +15,7 @@ const optionalText = (max: number) => z.string().trim().max(max).default('');
 const querySchema = z
   .object({
     page: z.coerce.number().int().min(1).max(1_000_000).default(1),
-    pageSize: z.enum(['25', '50', '100']).default('25').transform(Number),
+    pageSize: z.literal('10').default('10').transform(Number),
     q: optionalText(120),
     id: optionalText(60),
     status: z.union([z.enum(leadStatuses), z.literal('')]).default(''),

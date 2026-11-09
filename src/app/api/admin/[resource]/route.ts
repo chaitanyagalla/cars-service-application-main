@@ -6,7 +6,7 @@ import {
   readJsonBody,
   RequestInputError,
 } from '@/lib/security';
-import { isResource, listResource, validators } from '@/lib/admin-data';
+import { isResource, validators } from '@/lib/admin-data';
 import { createCarWithUniqueSlug } from '@/lib/admin-cars';
 import { LocationConflictError, saveLocation } from '@/lib/admin-locations';
 import { hashPassword } from '@/lib/passwords';
@@ -27,21 +27,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ resourc
   if (!u) return jsonError('Unauthorized', 401);
   const { resource } = await params;
   if (!isResource(resource)) return jsonError('Unknown resource', 404);
-  if (resource === 'bookings' || resource === 'audits') {
-    try {
-      const page = await listAdminRecords(
-        resource,
-        parseAdminQuery(new URL(_req.url).searchParams),
-      );
-      return Response.json(page, { headers: { 'Cache-Control': 'no-store' } });
-    } catch (error) {
-      if (error instanceof AdminQueryError) return jsonError(error.message, 422);
-      console.error('Admin list failed');
-      return jsonError('Could not load records', 500);
-    }
+  try {
+    const page = await listAdminRecords(resource, parseAdminQuery(new URL(_req.url).searchParams));
+    return Response.json(page, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    if (error instanceof AdminQueryError) return jsonError(error.message, 422);
+    console.error('Admin list failed');
+    return jsonError('Could not load records', 500);
   }
-  const rows = await listResource(resource);
-  return Response.json(rows, { headers: { 'Cache-Control': 'no-store' } });
 }
 export async function POST(req: Request, { params }: { params: Promise<{ resource: string }> }) {
   if (!sameOrigin(req)) return jsonError('Invalid origin', 403);

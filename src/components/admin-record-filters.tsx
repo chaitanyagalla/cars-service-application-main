@@ -74,14 +74,6 @@ export function AdminRecordFilters({
         <span className="form-label">Through (India time)</span>
         <input className="input" name="to" type="date" defaultValue={query.to} />
       </label>
-      <label>
-        <span className="form-label">Per page</span>
-        <select className="input" name="pageSize" defaultValue={query.pageSize}>
-          {[25, 50, 100].map((size) => (
-            <option key={size}>{size}</option>
-          ))}
-        </select>
-      </label>
       <button type="submit" className="btn btn-gold">
         Apply filters
       </button>

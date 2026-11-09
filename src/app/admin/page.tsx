@@ -26,13 +26,16 @@ export default async function AdminDashboard() {
   });
   return (
     <>
-      <h1 className="display" style={{ fontSize: 43 }}>
-        Admin Dashboard
-      </h1>
+      <h1 className="display admin-page-title admin-dashboard-title">Admin Dashboard</h1>
       <p className="muted">Manage your live fleet, bookings and website content.</p>
-      <div className="feature-grid" style={{ margin: '28px 0' }}>
+      <div className="feature-grid admin-stats" style={{ margin: '28px 0' }}>
         {stats.map(([name, count, where]) => (
-          <Link href={`/admin/${where}`} key={name} className="panel" style={{ padding: 25 }}>
+          <Link
+            href={`/admin/${where}`}
+            key={name}
+            className="panel admin-stat"
+            style={{ padding: 25 }}
+          >
             <div className="price" style={{ textAlign: 'left' }}>
               {count}
             </div>
@@ -41,10 +44,14 @@ export default async function AdminDashboard() {
         ))}
       </div>
       <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 13 }}>Latest Enquiries</h2>
-      <div className="panel" style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
+      <div className="panel admin-record-panel" style={{ overflowX: 'auto' }}>
+        <table
+          className="admin-table admin-record-table"
+          role="table"
+          aria-label="Latest enquiries"
+        >
+          <thead role="rowgroup">
+            <tr role="row">
               <th>Customer</th>
               <th>Car</th>
               <th>Phone</th>
@@ -53,19 +60,38 @@ export default async function AdminDashboard() {
               <th>Date</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
+            {recent.length === 0 && (
+              <tr role="row">
+                <td role="cell" colSpan={6} className="admin-empty-records">
+                  No enquiries yet.
+                </td>
+              </tr>
+            )}
             {recent.map((r) => (
-              <tr key={r.id}>
-                <td>
+              <tr key={r.id} role="row">
+                <td role="cell" data-label="Customer">
                   <Link className="small-btn" href={`/admin/bookings/${encodeURIComponent(r.id)}`}>
                     {r.customerName}
                   </Link>
                 </td>
-                <td>{r.car.name}</td>
-                <td>{r.customerPhone}</td>
-                <td>{r.pickupLocation}</td>
-                <td>{r.status}</td>
-                <td>{r.createdAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
+                <td role="cell" data-label="Car">
+                  <span>{r.car.name}</span>
+                </td>
+                <td role="cell" data-label="Phone">
+                  <span>{r.customerPhone}</span>
+                </td>
+                <td role="cell" data-label="Location">
+                  <span>{r.pickupLocation}</span>
+                </td>
+                <td role="cell" data-label="Status">
+                  <span>{r.status}</span>
+                </td>
+                <td role="cell" data-label="Date">
+                  <span>
+                    {r.createdAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -1,11 +1,14 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, toast } from '@heroui/react';
+import { Images, Upload, LoaderCircle } from 'lucide-react';
 import type { Resource } from '@/lib/admin-data';
 import { formatLocationName } from '@/lib/location-names';
-import { queryHref, type PageInfo } from '@/lib/admin-query';
+import type { PageInfo } from '@/lib/admin-query';
 import { useFeedback } from '@/components/app-feedback';
 import ImageCropDialog from '@/components/image-crop-dialog';
+import { AdminGalleryUpload } from '@/components/admin-gallery-upload';
+import { AdminPagination } from '@/components/admin-pagination';
 import {
   fetchAdminRows,
   sendAdminMutation,
@@ -38,18 +41,6 @@ const carFields: Field[] = [
     help: 'Adds the ★ Popular badge to this car on the home page and car listings. Save Changes to apply.',
   },
   { key: 'description', label: 'Description', kind: 'textarea', wide: true },
-  {
-    key: 'imageUrl',
-    label: 'Cover image URL (/cars/name.webp or HTTPS)',
-    required: true,
-    wide: true,
-  },
-  {
-    key: 'gallery',
-    label: 'Gallery images — one HTTPS or /cars/ URL per line',
-    kind: 'textarea',
-    wide: true,
-  },
   { key: 'seats', label: 'Seats', kind: 'number' },
   { key: 'fuel', label: 'Fuel' },
   { key: 'transmission', label: 'Transmission' },
@@ -197,6 +188,15 @@ export default function AdminManager({
   const [lastChangeConfirmed, setLastChangeConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const coverInput = useRef<HTMLInputElement>(null);
+  const editor = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (editing !== null && window.matchMedia('(max-width: 760px)').matches) {
+      editor.current?.scrollIntoView({ block: 'start' });
+      editor.current?.focus({ preventScroll: true });
+    }
+  }, [editing]);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [openingCrop, setOpeningCrop] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,18 +209,18 @@ export default function AdminManager({
   const refreshInFlight = useRef(false);
   const leaveApproved = useRef(false);
   const dirty = editing !== null && JSON.stringify(form) !== JSON.stringify(originalForm);
-  const locked = busy || uploading || refreshing;
+  const locked = busy || uploading || refreshing || galleryUploading || openingCrop;
   const writesBlocked = locked || stale || sessionExpired || uncertain;
   const editable = resource !== 'audits';
   const canCreate = !['bookings', 'settings', 'audits'].includes(resource);
   async function begin(row?: Record<string, any>) {
-    if (writesBlocked || !(await allowDiscard())) return;
+    if (writesBlocked || cropFile || !(await allowDiscard())) return;
     const next = row
       ? { ...row, password: '', gallery: row.gallery || [] }
       : {
           ...newDefaults,
           ...(resource === 'testimonials' ? { rating: 5 } : {}),
-          ...(resource === 'locations' ? { sortOrder: rows.length } : {}),
+          ...(resource === 'locations' ? { sortOrder: pagination?.total ?? rows.length } : {}),
         };
     setEditing(row?.id || 'new');
     setForm(next);
@@ -241,7 +241,7 @@ export default function AdminManager({
     );
   }
   async function closeEditor() {
-    if (busy || uploading || !(await allowDiscard())) return;
+    if (locked || cropFile || !(await allowDiscard())) return;
     setEditing(null);
     setForm({});
     setOriginalForm({});
@@ -305,9 +305,9 @@ export default function AdminManager({
   }, []);
 
   useEffect(() => {
-    if (!dirty && !busy && !uploading && !uncertain) return;
+    if (!dirty && !busy && !uploading && !galleryUploading && !uncertain) return;
     const warning =
-      busy || uploading
+      busy || uploading || galleryUploading
         ? 'A request is still running. Leave this page? Check the record before repeating the action.'
         : uncertain
           ? 'Your last request has an unconfirmed outcome. Leave this page? Check the record before repeating the action.'
@@ -374,7 +374,16 @@ export default function AdminManager({
       document.removeEventListener('click', beforeNavigate, true);
       document.removeEventListener('submit', beforeFilterSubmit, true);
     };
-  }, [dirty, busy, uploading, uncertain, confirmAction, requestLeave, registerLeaveGuard]);
+  }, [
+    dirty,
+    busy,
+    uploading,
+    galleryUploading,
+    uncertain,
+    confirmAction,
+    requestLeave,
+    registerLeaveGuard,
+  ]);
 
   useEffect(() => {
     if (
@@ -413,7 +422,14 @@ export default function AdminManager({
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!editing || writesBlocked || mutationInFlight.current || refreshInFlight.current) return;
+    if (
+      !editing ||
+      writesBlocked ||
+      cropFile ||
+      mutationInFlight.current ||
+      refreshInFlight.current
+    )
+      return;
     mutationInFlight.current = true;
     setBusy(true);
     setError('');
@@ -422,22 +438,17 @@ export default function AdminManager({
     const payload: Record<string, any> = {};
     for (const f of fields[resource]) {
       const value = form[f.key];
-      if (f.key === 'gallery')
-        payload.gallery = Array.isArray(value)
-          ? value
-          : value
-            ? String(value)
-                .split(/[\n,]/)
-                .map((s) => s.trim())
-                .filter(Boolean)
-            : [];
-      else if (f.key === 'rating')
+      if (f.key === 'rating')
         payload.rating =
           value === '' || value === null || value === undefined ? null : Number(value);
       else if (f.kind === 'number') payload[f.key] = Number(value ?? 0);
       else if (f.kind === 'checkbox') payload[f.key] = Boolean(value);
       else if (f.key === 'password' && editing !== 'new' && !value) payload[f.key] = undefined;
       else payload[f.key] = value ?? '';
+    }
+    if (resource === 'cars') {
+      payload.imageUrl = form.imageUrl || '/cars/placeholder.svg';
+      payload.gallery = Array.isArray(form.gallery) ? form.gallery : [];
     }
     try {
       const creation = editing === 'new';
@@ -657,9 +668,47 @@ export default function AdminManager({
     return String(v).slice(0, 170);
   }
   const Heading = leadDetails ? 'h2' : 'h1';
+  const mobileLabels: Record<string, string> = {
+    id: 'Reference',
+    name: 'Name',
+    page: 'Car page',
+    category: 'Category',
+    priceDay: 'Price / day',
+    featured: 'Popular',
+    available: 'Available',
+    published: 'Published',
+    customerName: 'Customer',
+    customerPhone: 'Phone',
+    car: 'Car',
+    pickupLocation: 'Pickup area',
+    pickupDate: 'Pickup',
+    returnDate: 'Return',
+    notes: 'Notes',
+    status: 'Status',
+    createdAt: 'Created',
+    email: 'Email',
+    role: 'Role',
+    active: 'Active',
+    user: 'Staff member',
+    action: 'Action',
+    resource: 'Resource',
+    resourceId: 'Record ID',
+    businessName: 'Business name',
+    whatsappNumber: 'WhatsApp',
+    contactEmail: 'Email',
+    address: 'Address',
+    rating: 'Rating',
+    text: 'Review',
+    verified: 'Verified',
+    sortOrder: 'Display position',
+    subtitle: 'Subtitle',
+    question: 'Question',
+    answer: 'Answer',
+  };
   return (
     <>
       <div
+        className="admin-page-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -670,7 +719,7 @@ export default function AdminManager({
         }}
       >
         <div>
-          <h1 className="display" style={{ fontSize: 39, marginBottom: 5 }}>
+          <Heading className="display admin-page-title">
             {
               (
                 {
@@ -685,7 +734,7 @@ export default function AdminManager({
                 } as Record<string, string>
               )[resource]
             }
-          </h1>
+          </Heading>
           <p className="note">
             {resource === 'bookings'
               ? 'Only saved enquiry forms appear here. Status changes are manual and do not reserve a vehicle or collect payment. Direct WhatsApp clicks are not tracked.'
@@ -701,7 +750,7 @@ export default function AdminManager({
             </p>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="admin-toolbar" style={{ display: 'flex', gap: 10 }}>
           <button
             type="button"
             className="btn btn-outline"
@@ -740,14 +789,23 @@ export default function AdminManager({
         </p>
       )}
       {editable && editing !== null && (
-        <div className="panel" style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px 0' }}>
+        <div
+          className="panel admin-editor"
+          ref={editor}
+          tabIndex={-1}
+          aria-label="Record editor"
+          style={{ marginBottom: 24 }}
+        >
+          <div
+            className="admin-editor-heading"
+            style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px 0' }}
+          >
             <h2 style={{ fontSize: 20, fontWeight: 800 }}>
               {editing === 'new' ? 'Create new' : 'Edit record'}
             </h2>
             <button
               className="small-btn"
-              disabled={busy || uploading}
+              disabled={locked || Boolean(cropFile)}
               onClick={closeEditor}
               aria-label="Close editor"
             >
@@ -756,7 +814,10 @@ export default function AdminManager({
           </div>
           <form className="admin-form" onSubmit={save}>
             {fields[resource].map((f) => (
-              <label className={`field ${f.wide ? 'wide' : ''}`} key={f.key}>
+              <label
+                className={`field ${f.wide ? 'wide' : ''} ${f.kind === 'checkbox' ? 'admin-checkbox-field' : ''}`}
+                key={f.key}
+              >
                 <span className="form-label">{f.label}</span>
                 {f.kind === 'checkbox' ? (
                   <input
@@ -781,13 +842,7 @@ export default function AdminManager({
                   <textarea
                     rows={4}
                     className="input"
-                    value={
-                      f.key === 'gallery'
-                        ? Array.isArray(form.gallery)
-                          ? form.gallery.join('\n')
-                          : String(form.gallery || '')
-                        : String(form[f.key] ?? '')
-                    }
+                    value={String(form[f.key] ?? '')}
                     onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                     required={f.required}
                   />
@@ -814,42 +869,98 @@ export default function AdminManager({
               </label>
             ))}
             {resource === 'cars' && (
-              <div className="wide">
-                <label className="form-label" htmlFor="admin-image-upload">
-                  Upload cover image (Cloudinary must be configured)
-                </label>
-                <input
-                  id="admin-image-upload"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  aria-describedby="admin-image-upload-help"
-                  disabled={uploading || openingCrop}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (file) chooseImage(file);
-                  }}
-                />
-                <p className="note" id="admin-image-upload-help" style={{ marginTop: 6 }}>
-                  You&apos;ll crop the photo to the car card frame (16:9) before it uploads, so it
-                  fills the card with no borders.
-                </p>
-                {uploading && <p className="note">Uploading image...</p>}
-                {form.imageUrl && (
-                  <div className="admin-cover-preview">
-                    <img src={String(form.imageUrl)} alt="Cover preview, as shown on car cards" />
-                    {!/\.svg(\?|$)/i.test(String(form.imageUrl)) && (
-                      <button
-                        type="button"
-                        className="small-btn"
-                        disabled={uploading || openingCrop}
-                        onClick={() => void recropCurrentImage()}
-                      >
-                        {openingCrop ? 'Opening…' : 'Adjust crop'}
-                      </button>
+              <section className="wide admin-car-photos" aria-label="Car photos">
+                <div className="admin-photo-heading">
+                  <Images size={22} aria-hidden="true" />
+                  <div>
+                    <h3>Car photos</h3>
+                    <p className="note">
+                      Show customers the car from every angle. Save Changes when you’re done.
+                    </p>
+                  </div>
+                </div>
+                <div className="admin-photo-columns">
+                  <div>
+                    <div className="admin-photo-label">
+                      <h4>Cover photo</h4>
+                      <span>Main photo</span>
+                    </div>
+                    {form.imageUrl && (
+                      <div className="admin-cover-preview">
+                        <img
+                          src={String(form.imageUrl)}
+                          alt="Cover preview, as shown on car cards"
+                        />
+                        {!/\.svg(\?|$)/i.test(String(form.imageUrl)) && (
+                          <button
+                            type="button"
+                            className="small-btn"
+                            disabled={writesBlocked || Boolean(cropFile)}
+                            onClick={() => void recropCurrentImage()}
+                          >
+                            {openingCrop ? 'Opening…' : 'Adjust crop'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <input
+                      ref={coverInput}
+                      id="admin-image-upload"
+                      className="admin-photo-file-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      aria-describedby="admin-image-upload-help"
+                      aria-label="Select cover photo"
+                      disabled={writesBlocked || Boolean(cropFile)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) chooseImage(file);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="admin-photo-upload-button"
+                      disabled={writesBlocked || Boolean(cropFile)}
+                      onClick={() => coverInput.current?.click()}
+                    >
+                      {uploading ? (
+                        <LoaderCircle
+                          className="admin-photo-spinner"
+                          size={18}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Upload size={18} aria-hidden="true" />
+                      )}
+                      {uploading
+                        ? 'Uploading cover…'
+                        : form.imageUrl && form.imageUrl !== '/cars/placeholder.svg'
+                          ? 'Change cover photo'
+                          : 'Upload cover photo'}
+                    </button>
+                    <p className="note" id="admin-image-upload-help" style={{ marginTop: 6 }}>
+                      Choose a JPG, PNG or WebP photo up to 25 MB. Adjust the crop before uploading
+                      so it fits the car card.
+                    </p>
+                    {uploading && (
+                      <p className="note" role="status">
+                        Uploading cover photo…
+                      </p>
                     )}
                   </div>
-                )}
+                  <AdminGalleryUpload
+                    key={editing}
+                    gallery={Array.isArray(form.gallery) ? form.gallery : []}
+                    disabled={writesBlocked || Boolean(cropFile)}
+                    onChange={(gallery) => setForm((previous) => ({ ...previous, gallery }))}
+                    onUploadingChange={setGalleryUploading}
+                    onSessionExpired={() => {
+                      setSessionExpired(true);
+                      setError(sessionExpiredMessage);
+                    }}
+                  />
+                </div>
                 {cropFile && (
                   <ImageCropDialog
                     file={cropFile}
@@ -860,23 +971,41 @@ export default function AdminManager({
                     }}
                   />
                 )}
-              </div>
+              </section>
             )}
-            <div className="wide" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <Button type="submit" isPending={busy} className="hero-ui-btn">
+            <div
+              className="wide admin-editor-actions"
+              style={{ display: 'flex', gap: 12, alignItems: 'center' }}
+            >
+              <Button
+                type="submit"
+                isPending={busy}
+                isDisabled={writesBlocked || Boolean(cropFile)}
+                className="hero-ui-btn"
+              >
                 {busy ? 'Saving...' : 'Save Changes'}
               </Button>
-              <button type="button" className="btn btn-outline" onClick={() => setEditing(null)}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                disabled={locked || Boolean(cropFile)}
+                onClick={closeEditor}
+              >
                 Cancel
               </button>
             </div>
           </form>
         </div>
       )}
-      <div className="panel" style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
+      {filterControls}
+      <div className="panel admin-record-panel" style={{ overflowX: 'auto' }}>
+        <table
+          className="admin-table admin-record-table"
+          role="table"
+          aria-label={`${resource} records`}
+        >
+          <thead role="rowgroup">
+            <tr role="row">
               {columns.map((c) => (
                 <th key={c}>
                   {resource === 'locations'
@@ -896,36 +1025,49 @@ export default function AdminManager({
               {editable && <th>Actions</th>}
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 1}>No records yet.</td>
+              <tr role="row">
+                <td
+                  role="cell"
+                  className="admin-empty-records"
+                  colSpan={columns.length + (editable ? 1 : 0)}
+                >
+                  No records yet.
+                </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} role="row">
                   {columns.map((c) => (
-                    <td key={c}>
-                      {c === 'page' ? (
-                        row.published ? (
-                          <a
-                            className="small-btn"
-                            href={`/cars/${encodeURIComponent(row.slug)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            View car
-                          </a>
+                    <td key={c} role="cell" data-label={mobileLabels[c] || c}>
+                      <div className="admin-cell-value">
+                        {c === 'page' ? (
+                          row.published ? (
+                            <a
+                              className="small-btn"
+                              href={`/cars/${encodeURIComponent(row.slug)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View car
+                            </a>
+                          ) : (
+                            <span className="note">Unpublished</span>
+                          )
                         ) : (
-                          <span className="note">Unpublished</span>
-                        )
-                      ) : (
-                        display(row, c)
-                      )}
+                          display(row, c)
+                        )}
+                      </div>
                     </td>
                   ))}
                   {editable && (
-                    <td style={{ whiteSpace: 'nowrap' }}>
+                    <td
+                      role="cell"
+                      data-label="Actions"
+                      className="admin-record-actions"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
                       {resource === 'bookings' && !leadDetails ? (
                         <a
                           className="small-btn"
@@ -961,27 +1103,7 @@ export default function AdminManager({
         </table>
       </div>
       {pagination && !leadDetails && (
-        <nav className="admin-pagination" aria-label="Record pages">
-          {pagination.page > 1 && (
-            <a
-              className="btn btn-outline"
-              href={queryHref(`/admin/${resource}`, listQuery, pagination.page - 1)}
-            >
-              Previous
-            </a>
-          )}
-          <span>
-            Page {pagination.page} of {pagination.totalPages} · {pagination.total} matching records
-          </span>
-          {pagination.page < pagination.totalPages && (
-            <a
-              className="btn btn-outline"
-              href={queryHref(`/admin/${resource}`, listQuery, pagination.page + 1)}
-            >
-              Next
-            </a>
-          )}
-        </nav>
+        <AdminPagination pagination={pagination} path={`/admin/${resource}`} query={listQuery} />
       )}
       <p className="note" style={{ marginTop: 17 }}>
         {rows.length} record(s) shown
@@ -991,7 +1113,9 @@ export default function AdminManager({
             ? '. Filters apply to the full audit history.'
             : resource === 'locations'
               ? '. Display positions include inactive areas. Names ignore capitalization and extra spaces when checking for duplicates.'
-              : '. Images must use a /cars/ public asset path or an HTTPS image URL. Avoid unlicensed imagery.'}
+              : resource === 'cars'
+                ? '. Edit a car to upload its cover and gallery photos.'
+                : ''}
       </p>
     </>
   );

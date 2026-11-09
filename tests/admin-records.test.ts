@@ -21,7 +21,7 @@ type Where = Record<string, any>;
 // Prisma's filters are translated here; transactions and SQL filtering/paging
 // execute in the engine rather than using a pre-truncated mocked row array.
 function adapter(sql: Sql) {
-  function delegate(table: 'BookingIntent' | 'AuditLog') {
+  function delegate(table: string) {
     function condition(
       where: Where = {},
       values: unknown[] = [],
@@ -50,7 +50,7 @@ function adapter(sql: Sql) {
       return { text: clauses.join(' AND ') || 'TRUE', values };
     }
     return {
-      async count({ where }: { where?: Where }) {
+      async count({ where }: { where?: Where } = {}) {
         const filter = condition(where);
         return (
           await sql.query<{ count: number }>(
@@ -59,11 +59,33 @@ function adapter(sql: Sql) {
           )
         ).rows[0].count;
       },
-      async findMany({ where, skip = 0, take }: { where?: Where; skip?: number; take: number }) {
+      async findMany({
+        where,
+        skip = 0,
+        take,
+        orderBy,
+        select,
+      }: {
+        where?: Where;
+        skip?: number;
+        take: number;
+        orderBy: Record<string, string> | Record<string, string>[];
+        select?: Record<string, boolean>;
+      }) {
         const filter = condition(where);
+        const ordering = (Array.isArray(orderBy) ? orderBy : [orderBy])
+          .flatMap((part) =>
+            Object.entries(part).map(([key, direction]) => `t."${key}" ${direction}`),
+          )
+          .join(', ');
+        const selection = select
+          ? Object.keys(select)
+              .map((key) => `t."${key}"`)
+              .join(', ')
+          : 't.*';
         const rows = (
           await sql.query<Record<string, any>>(
-            `SELECT t.* FROM "${table}" t WHERE ${filter.text} ORDER BY t."createdAt" DESC, t.id DESC LIMIT $${filter.values.length + 1} OFFSET $${filter.values.length + 2}`,
+            `SELECT ${selection} FROM "${table}" t WHERE ${filter.text} ORDER BY ${ordering} LIMIT $${filter.values.length + 1} OFFSET $${filter.values.length + 2}`,
             [...filter.values, take, skip],
           )
         ).rows;
@@ -72,7 +94,7 @@ function adapter(sql: Sql) {
             row.car = (
               await sql.query('SELECT name FROM "Car" WHERE id = $1', [row.carId])
             ).rows[0];
-          else
+          else if (table === 'AuditLog')
             row.user = row.userId
               ? (await sql.query('SELECT email FROM "AdminUser" WHERE id = $1', [row.userId]))
                   .rows[0]
@@ -82,7 +104,16 @@ function adapter(sql: Sql) {
       },
     };
   }
-  return { bookingIntent: delegate('BookingIntent'), auditLog: delegate('AuditLog') };
+  return {
+    bookingIntent: delegate('BookingIntent'),
+    auditLog: delegate('AuditLog'),
+    car: delegate('Car'),
+    location: delegate('Location'),
+    faq: delegate('Faq'),
+    testimonial: delegate('Testimonial'),
+    siteSettings: delegate('SiteSettings'),
+    adminUser: delegate('AdminUser'),
+  };
 }
 
 beforeAll(async () => {
@@ -105,7 +136,7 @@ afterAll(async () => {
 beforeEach(async () => {
   mocks.currentAdmin.mockResolvedValue({ id: 'owner' });
   await db.exec(`
-    TRUNCATE "AdminUser", "Car" CASCADE;
+    TRUNCATE "AdminUser", "Car", "Location", "Faq", "Testimonial", "SiteSettings" CASCADE;
     INSERT INTO "AdminUser" (id, name, email, "passwordHash") VALUES ('owner', 'Owner', 'owner@example.com', 'hash');
     INSERT INTO "Car" (id, slug, name, category, "priceDay", "updatedAt") VALUES
       ('car-a', 'car-a', 'Car A', 'HATCHBACK', 1000, NOW()), ('car-b', 'car-b', 'Car B', 'SUV', 2000, NOW());
@@ -131,15 +162,60 @@ function csv(query = '') {
 }
 
 describe('complete enquiry and audit access', () => {
+  const seeds = {
+    cars: `INSERT INTO "Car" (id, slug, name, category, "priceDay", "updatedAt", "createdAt") SELECT 'extra-' || i, 'extra-' || i, 'Extra ' || i, 'SUV', 1000, NOW(), '2026-11-01' FROM generate_series(1, 19) i`,
+    locations: `INSERT INTO "Location" (id, name) SELECT 'area-' || i, 'Area ' || i FROM generate_series(1, 21) i`,
+    faqs: `INSERT INTO "Faq" (id, question, answer) SELECT 'faq-' || i, 'Question ' || i, 'Answer' FROM generate_series(1, 21) i`,
+    testimonials: `INSERT INTO "Testimonial" (id, name, text, "createdAt") SELECT 'review-' || i, 'Customer ' || i, 'Review', '2026-11-01' FROM generate_series(1, 21) i`,
+    settings: `INSERT INTO "SiteSettings" (id) SELECT 'setting-' || i FROM generate_series(1, 21) i`,
+    users: `INSERT INTO "AdminUser" (id, name, email, "passwordHash", "createdAt") SELECT 'staff-' || i, 'Staff ' || i, 'staff' || i || '@example.com', 'private-hash', '2026-11-01' FROM generate_series(1, 20) i`,
+  };
+  it.each(Object.keys(seeds) as (keyof typeof seeds)[])(
+    'paginates all %s in groups of ten without duplicates',
+    async (resource) => {
+      await db.exec(seeds[resource]);
+      const ids: string[] = [];
+      for (let page = 1; page <= 3; page++) {
+        const response = await read(resource, `page=${page}`);
+        expect(response.status).toBe(200);
+        const result = await response.json();
+        expect(result).toMatchObject({ page, pageSize: 10, total: 21, totalPages: 3 });
+        expect(result.rows).toHaveLength(page === 3 ? 1 : 10);
+        ids.push(...result.rows.map((row: { id: string }) => row.id));
+        if (resource === 'users')
+          for (const row of result.rows) expect(row).not.toHaveProperty('passwordHash');
+      }
+      expect(new Set(ids).size).toBe(21);
+      expect(await (await read(resource, 'page=999')).json()).toMatchObject({ page: 3, total: 21 });
+    },
+  );
+  it('returns to the previous page when the last record on a page is deleted', async () => {
+    await db.exec(seeds.locations);
+    const last = await (await read('locations', 'page=3')).json();
+    await db.query('DELETE FROM "Location" WHERE id = $1', [last.rows[0].id]);
+    const result = await (await read('locations', 'page=3')).json();
+    expect(result).toMatchObject({ page: 2, pageSize: 10, total: 20, totalPages: 2 });
+    expect(result.rows).toHaveLength(10);
+  });
+  it('returns an empty first page for an empty list', async () => {
+    expect(await (await read('locations', 'page=5')).json()).toMatchObject({
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 1,
+      rows: [],
+    });
+  });
   it.each(['bookings', 'audits'])(
     'reaches every one of 351 %s with tied timestamps, without duplicates',
     async (resource) => {
       const ids: string[] = [];
-      for (let page = 1; page <= 15; page++) {
+      for (let page = 1; page <= 36; page++) {
         const response = await read(resource, `page=${page}`);
         expect(response.status).toBe(200);
         const result = await response.json();
-        expect(result).toMatchObject({ total: 351, totalPages: 15, page });
+        expect(result).toMatchObject({ total: 351, totalPages: 36, page, pageSize: 10 });
+        expect(result.rows).toHaveLength(page === 36 ? 1 : 10);
         ids.push(...result.rows.map((row: { id: string }) => row.id));
       }
       expect(ids).toHaveLength(351);
@@ -150,10 +226,10 @@ describe('complete enquiry and audit access', () => {
 
   it('filters before pagination and keeps full notes in the lead result', async () => {
     const result = await (
-      await read('bookings', 'status=NEW&carId=car-a&page=2&pageSize=25')
+      await read('bookings', 'status=NEW&carId=car-a&page=2&pageSize=10')
     ).json();
     expect(result.total).toBe(59);
-    expect(result.rows).toHaveLength(25);
+    expect(result.rows).toHaveLength(10);
     for (const row of result.rows) {
       expect(row.status).toBe('NEW');
       expect(row.carId).toBe('car-a');
@@ -177,7 +253,7 @@ describe('complete enquiry and audit access', () => {
     const result = await (
       await read('audits', 'actor=OWNER%40example.com&action=update&entity=cars&page=7')
     ).json();
-    expect(result).toMatchObject({ total: 176, totalPages: 8, page: 7 });
+    expect(result).toMatchObject({ total: 176, totalPages: 18, page: 7 });
     expect(
       result.rows.every(
         (row: { action: string; resource: string }) =>
