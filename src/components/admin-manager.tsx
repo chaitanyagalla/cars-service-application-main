@@ -5,6 +5,7 @@ import type { Resource } from '@/lib/admin-data';
 import { formatLocationName } from '@/lib/location-names';
 import { queryHref, type PageInfo } from '@/lib/admin-query';
 import { useFeedback } from '@/components/app-feedback';
+import ImageCropDialog from '@/components/image-crop-dialog';
 import {
   fetchAdminRows,
   sendAdminMutation,
@@ -196,6 +197,8 @@ export default function AdminManager({
   const [lastChangeConfirmed, setLastChangeConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [openingCrop, setOpeningCrop] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
   const [stale, setStale] = useState(false);
@@ -498,6 +501,48 @@ export default function AdminManager({
       setUploading(false);
     }
   }
+  function chooseImage(file: File) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast('Unsupported image', {
+        variant: 'danger',
+        description: 'Choose a JPEG, PNG or WebP photo.',
+        timeout: 6000,
+      });
+      return;
+    }
+    // Cropping re-encodes the photo, so large camera originals are fine here.
+    if (file.size > 25 * 1024 * 1024) {
+      toast('Image too large', {
+        variant: 'danger',
+        description: 'Choose a photo under 25MB.',
+        timeout: 6000,
+      });
+      return;
+    }
+    setCropFile(file);
+  }
+  async function recropCurrentImage() {
+    const url = String(form.imageUrl || '');
+    if (!url || openingCrop) return;
+    setOpeningCrop(true);
+    try {
+      const res = await fetch(url, { credentials: 'omit' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) throw new Error();
+      const name = decodeURIComponent(new URL(url, location.href).pathname.split('/').pop() || '');
+      setCropFile(new File([blob], name || 'car', { type: blob.type }));
+    } catch {
+      toast('Could not open this image for cropping', {
+        variant: 'danger',
+        description:
+          'Its host does not allow it to be edited here. Download the photo and use Upload instead.',
+        timeout: 8000,
+      });
+    } finally {
+      setOpeningCrop(false);
+    }
+  }
   async function remove(id: string) {
     if (
       writesBlocked ||
@@ -771,26 +816,49 @@ export default function AdminManager({
             {resource === 'cars' && (
               <div className="wide">
                 <label className="form-label" htmlFor="admin-image-upload">
-                  Optional image upload (Cloudinary must be configured)
+                  Upload cover image (Cloudinary must be configured)
                 </label>
                 <input
                   id="admin-image-upload"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  aria-describedby="admin-image-upload-help"
+                  disabled={uploading || openingCrop}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) void uploadImage(file);
+                    e.target.value = '';
+                    if (file) chooseImage(file);
                   }}
                 />
+                <p className="note" id="admin-image-upload-help" style={{ marginTop: 6 }}>
+                  You&apos;ll crop the photo to the car card frame (16:9) before it uploads, so it
+                  fills the card with no borders.
+                </p>
                 {uploading && <p className="note">Uploading image...</p>}
                 {form.imageUrl && (
-                  <div style={{ marginTop: 10 }}>
-                    <img
-                      src={String(form.imageUrl)}
-                      alt="Cover preview"
-                      style={{ width: 240, height: 135, objectFit: 'cover', borderRadius: 10 }}
-                    />
+                  <div className="admin-cover-preview">
+                    <img src={String(form.imageUrl)} alt="Cover preview, as shown on car cards" />
+                    {!/\.svg(\?|$)/i.test(String(form.imageUrl)) && (
+                      <button
+                        type="button"
+                        className="small-btn"
+                        disabled={uploading || openingCrop}
+                        onClick={() => void recropCurrentImage()}
+                      >
+                        {openingCrop ? 'Opening…' : 'Adjust crop'}
+                      </button>
+                    )}
                   </div>
+                )}
+                {cropFile && (
+                  <ImageCropDialog
+                    file={cropFile}
+                    onCancel={() => setCropFile(null)}
+                    onConfirm={(cropped) => {
+                      setCropFile(null);
+                      void uploadImage(cropped);
+                    }}
+                  />
                 )}
               </div>
             )}

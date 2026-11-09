@@ -12,7 +12,7 @@ export default async function AboutPage() {
           <div className="center">
             <span className="eyebrow">About Our Service</span>
             <h1 className="display" style={{ fontSize: 55 }}>
-              Freedom to Explore, Your Way
+              Freedom to Explore, <span className="text-accent">Your Way</span>
             </h1>
             <p className="sub">{settings.description}</p>
           </div>

@@ -1,10 +1,29 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CarFront, Phone, MapPin, Clock3, Mail, MessageCircle } from 'lucide-react';
+import { CarFront, Phone, MapPin, Clock3, Mail, UsersRound, Fuel, Settings } from 'lucide-react';
 import type { SiteSettings } from '@prisma/client';
 import { whatsAppUrl } from '@/lib/whatsapp';
 import type { Car } from '@prisma/client';
 import type { RatedCar } from '@/lib/car-ratings';
+
+export function WhatsAppIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 2a10 10 0 0 0-8.66 15L2 22l5.14-1.35A10 10 0 1 0 12 2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        fill="currentColor"
+        d="M16.75 13.43c-.27-.14-1.61-.79-1.86-.88-.25-.1-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.72-1.34-1.61-1.5-1.88-.16-.27-.02-.42.12-.56.12-.12.27-.32.4-.48.14-.16.18-.27.27-.45.1-.18.05-.34-.02-.48-.07-.14-.61-1.48-.84-2.03-.22-.53-.45-.46-.61-.47h-.52c-.18 0-.48.07-.73.34-.25.27-.95.93-.95 2.27s.98 2.63 1.11 2.81c.14.18 1.92 2.93 4.65 4.1.65.28 1.16.44 1.55.56.65.2 1.25.17 1.72.1.52-.08 1.61-.66 1.84-1.3.23-.64.23-1.19.16-1.3-.07-.11-.25-.18-.52-.31Z"
+      />
+    </svg>
+  );
+}
 
 export function Header({ settings }: { settings: SiteSettings }) {
   const nav = [
@@ -141,20 +160,7 @@ export function FloatingWhatsApp({ phone }: { phone: string }) {
       target="_blank"
       rel="noopener noreferrer"
     >
-      <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path
-          d="M12 2a10 10 0 0 0-8.66 15L2 22l5.14-1.35A10 10 0 1 0 12 2Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          fill="currentColor"
-          d="M16.75 13.43c-.27-.14-1.61-.79-1.86-.88-.25-.1-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.72-1.34-1.61-1.5-1.88-.16-.27-.02-.42.12-.56.12-.12.27-.32.4-.48.14-.16.18-.27.27-.45.1-.18.05-.34-.02-.48-.07-.14-.61-1.48-.84-2.03-.22-.53-.45-.46-.61-.47h-.52c-.18 0-.48.07-.73.34-.25.27-.95.93-.95 2.27s.98 2.63 1.11 2.81c.14.18 1.92 2.93 4.65 4.1.65.28 1.16.44 1.55.56.65.2 1.25.17 1.72.1.52-.08 1.61-.66 1.84-1.3.23-.64.23-1.19.16-1.3-.07-.11-.25-.18-.52-.31Z"
-        />
-      </svg>
+      <WhatsAppIcon size={30} />
       <span className="floating-wa-tooltip" id="floating-whatsapp-tooltip" role="tooltip">
         Let&apos;s talk
       </span>
@@ -191,7 +197,15 @@ export function CarCard({ car }: { car: RatedCar }) {
           </div>
         )}
         <div className="car-meta">
-          ♧ {car.seats} seats &nbsp; ⛽ {car.fuel} &nbsp; ⚙ {car.transmission}
+          <span>
+            <UsersRound size={18} aria-hidden="true" /> {car.seats} seats
+          </span>
+          <span>
+            <Fuel size={18} aria-hidden="true" /> {car.fuel}
+          </span>
+          <span>
+            <Settings size={18} aria-hidden="true" /> {car.transmission}
+          </span>
         </div>
         <div className="pills">
           <span className="pill">₹{car.deposit} Deposit</span>
@@ -210,7 +224,7 @@ export function CarCard({ car }: { car: RatedCar }) {
               rel="noopener noreferrer"
               aria-label={`Enquire on WhatsApp for ${car.name}`}
             >
-              <MessageCircle size={21} />
+              <WhatsAppIcon size={32} />
             </a>
           ) : (
             <span className="pill">Unavailable</span>

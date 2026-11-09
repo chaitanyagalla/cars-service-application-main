@@ -12,7 +12,7 @@ export default async function LocationsPage() {
           <div className="center">
             <span className="eyebrow">Delivery Locations</span>
             <h1 className="display" style={{ fontSize: 55 }}>
-              Self-Drive Delivery Across Hyderabad
+              Self-Drive Delivery Across <span className="text-accent">Hyderabad</span>
             </h1>
             <p className="sub">
               These are our listed service areas. Confirm whether your specific address is covered.

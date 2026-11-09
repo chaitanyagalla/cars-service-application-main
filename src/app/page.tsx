@@ -1,14 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  CarFront,
   MapPin,
-  CalendarDays,
-  CheckCircle2,
   MessageCircle,
   Phone,
   Mail,
   ArrowRight,
+  ArrowUpRight,
   BadgeCheck,
   Tag,
   Headset,
@@ -17,6 +15,7 @@ import {
 import CustomerLayout from '@/components/customer-layout';
 import { CarCard } from '@/components/site-shell';
 import FleetCarousel from '@/components/fleet-carousel';
+import BookingJourney from '@/components/booking-journey';
 import { getCars, getSettings, getLocations, getFaqs, getTestimonials } from '@/lib/store';
 export const dynamic = 'force-dynamic';
 export default async function HomePage() {
@@ -50,7 +49,9 @@ export default async function HomePage() {
             <h1 className="display" id="hero-heading">
               {useReferenceHeadline ? (
                 <>
-                  <span>Freedom to drive.</span>
+                  <span>
+                    Freedom to <em className="text-accent">drive.</em>
+                  </span>
                   <span>Without the extra cost.</span>
                 </>
               ) : (
@@ -89,14 +90,17 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      <section className="section" id="cars">
+      <section className="section fleet-section" id="cars" aria-labelledby="fleet-heading">
         <div className="container">
           <div className="center">
-            <span className="eyebrow">Our Fleet</span>
-            <h2 className="display">Choose Your Perfect Ride</h2>
-            <p className="sub">
-              From fuel-efficient hatchbacks to spacious SUVs, find the car that suits your next
-              journey.
+            <span className="eyebrow fleet-eyebrow">
+              <Star size={24} fill="currentColor" aria-hidden="true" /> Top Rated Cars
+            </span>
+            <h2 className="display" id="fleet-heading">
+              Explore Our <span>Car Fleet</span>
+            </h2>
+            <p className="sub fleet-subtitle">
+              Premium self-drive cars in Hyderabad. Choose from our most popular vehicles.
             </p>
           </div>
           <FleetCarousel>
@@ -104,73 +108,32 @@ export default async function HomePage() {
               <CarCard key={c.id} car={c} />
             ))}
           </FleetCarousel>
-          <div className="center" style={{ marginTop: 35 }}>
-            <Link className="btn btn-gold" href="/cars">
-              View All Cars →
-            </Link>
-          </div>
         </div>
       </section>
-      <section className="section" style={{ background: 'var(--panel2)' }}>
-        <div className="container">
-          <div className="center">
-            <span className="eyebrow">How It Works</span>
-            <h2 className="display">Book in 4 Simple Steps</h2>
-            <p className="sub">Your journey starts with a simple enquiry.</p>
-          </div>
-          <div className="steps">
-            {[
-              {
-                icon: CarFront,
-                title: 'Choose Your Car',
-                text: 'Filter the fleet and compare models, features and prices.',
-              },
-              {
-                icon: CalendarDays,
-                title: 'Select Your Dates',
-                text: 'Tell us when and where you need the car.',
-              },
-              {
-                icon: MessageCircle,
-                title: 'Confirm on WhatsApp',
-                text: 'Send your prefilled enquiry and confirm availability with our team.',
-              },
-              {
-                icon: CheckCircle2,
-                title: 'Drive & Return',
-                text: 'Complete the agreed verification, pickup and return process.',
-              },
-            ].map((s, i) => (
-              <div className="step" key={s.title}>
-                <div className="step-icon">
-                  <s.icon size={32} />
-                </div>
-                <h3>
-                  {i + 1}. {s.title}
-                </h3>
-                <p>{s.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="section" id="locations">
+      <BookingJourney whatsappNumber={settings.whatsappNumber} />
+      <section
+        className="section delivery-section"
+        id="locations"
+        aria-labelledby="delivery-heading"
+      >
         <div className="container">
           <div className="center">
             <span className="eyebrow">Delivery Locations</span>
-            <h2 className="display">Doorstep Delivery Across Hyderabad</h2>
+            <h2 className="display" id="delivery-heading">
+              Doorstep Delivery Across <span className="text-accent">Hyderabad</span>
+            </h2>
             <p className="sub">Contact our team to check delivery availability for your area.</p>
           </div>
           <div className="location-grid">
             {locations.map((l) => (
               <div className="panel location-card" key={l.id}>
-                <MapPin size={24} />
+                <MapPin size={20} />
                 <strong>{l.name}</strong>
                 <span>{l.subtitle}</span>
               </div>
             ))}
           </div>
-          <div className="center" style={{ marginTop: 35 }}>
+          <div className="center delivery-action">
             <Link className="btn btn-outline" href="/locations">
               View All Locations
             </Link>
@@ -182,7 +145,9 @@ export default async function HomePage() {
           <div className="container">
             <div className="center">
               <span className="eyebrow">Customer Reviews</span>
-              <h2 className="display">What Our Customers Say</h2>
+              <h2 className="display">
+                What Our <span className="text-accent">Customers Say</span>
+              </h2>
               <p className="sub">Customer feedback shared with permission.</p>
             </div>
             <div className="review-grid">
@@ -203,109 +168,134 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-      <section className="section">
+      <section className="section faq-section" id="faqs" aria-labelledby="faq-heading">
         <div className="container">
           <div className="center">
             <span className="eyebrow">FAQ</span>
-            <h2 className="display">Common Questions About Our Self-Drive Cars</h2>
+            <h2 className="display" id="faq-heading">
+              Common Questions About Our <span className="text-accent">Self-Drive Cars</span>
+            </h2>
             <p className="sub">Quick answers before you hit the road.</p>
           </div>
           <div className="faq-list">
             {faqs.slice(0, 5).map((q, i) => (
-              <details className="panel faq-item" key={q.id} open={i === 0}>
+              <details className="panel faq-item" name="home-faqs" key={q.id} open={i === 0}>
                 <summary>{q.question}</summary>
                 <p>{q.answer}</p>
               </details>
             ))}
           </div>
-          <div className="center" style={{ marginTop: 32 }}>
+          <div className="center faq-action">
             <Link className="btn btn-outline" href="/faqs">
               Read All FAQs
             </Link>
           </div>
         </div>
       </section>
-      <section className="section" id="office">
+      <section className="office-section" id="office" aria-labelledby="office-heading">
         <div className="container">
-          <div className="center">
-            <span className="eyebrow">Get In Touch</span>
-            <h2 className="display">Ready to Get Started?</h2>
-            <p className="sub">Visit our location or contact us for a personalised quotation.</p>
+          <div className="office-heading">
+            <h2 className="display" id="office-heading">
+              A local team. A real conversation.
+            </h2>
           </div>
-          <div className="detail-hero">
-            <div className="panel" style={{ padding: 12, overflow: 'hidden' }}>
+          <div className="office-grid">
+            <div className="office-map">
               <iframe
                 title="Our office location on Google Maps"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(settings.address)}&output=embed`}
-                style={{ width: '100%', height: 330, border: 0, borderRadius: 12 }}
               />
-              <a
-                className="btn btn-outline"
-                href={settings.mapsUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-                style={{ marginTop: 12 }}
-              >
-                Open Google Maps →
-              </a>
-            </div>
-            <div className="panel" style={{ padding: 30 }}>
-              <h3 style={{ fontSize: 25, fontWeight: 800, marginBottom: 26 }}>Get in Touch</h3>
-              <div className="panel" style={{ padding: 20, marginBottom: 14 }}>
-                <MapPin style={{ display: 'inline', color: 'var(--gold)' }} /> &nbsp;{' '}
-                {settings.address}
-              </div>
-              <div className="panel" style={{ padding: 20, marginBottom: 14 }}>
-                <Phone style={{ display: 'inline', color: 'var(--gold)' }} /> &nbsp;{' '}
-                <a href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}>
-                  {settings.phoneNumber}
+              <div className="office-map-footer">
+                <span>
+                  <MapPin size={16} aria-hidden="true" /> Find us in Hyderabad
+                </span>
+                <a href={settings.mapsUrl} rel="noopener noreferrer" target="_blank">
+                  Get directions <ArrowUpRight size={16} aria-hidden="true" />
                 </a>
               </div>
-              <div className="panel" style={{ padding: 20, marginBottom: 14 }}>
-                <Mail style={{ display: 'inline', color: 'var(--gold)' }} /> &nbsp;{' '}
-                <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a>
+            </div>
+            <div className="office-details">
+              <h3>Let’s talk about your plans.</h3>
+              <div className="office-contact-list">
+                <a
+                  className="office-contact-row"
+                  href={settings.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="office-contact-icon">
+                    <MapPin size={18} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <span className="office-contact-label">Visit us</span>
+                    <span className="office-contact-value">{settings.address}</span>
+                  </span>
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
+                <a
+                  className="office-contact-row"
+                  href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}
+                >
+                  <span className="office-contact-icon">
+                    <Phone size={18} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <span className="office-contact-label">Give us a call</span>
+                    <span className="office-contact-value">{settings.phoneNumber}</span>
+                  </span>
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
+                <a className="office-contact-row" href={`mailto:${settings.contactEmail}`}>
+                  <span className="office-contact-icon">
+                    <Mail size={18} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <span className="office-contact-label">Drop us a note</span>
+                    <span className="office-contact-value">{settings.contactEmail}</span>
+                  </span>
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
               </div>
               <a
-                className="btn btn-green"
+                className="btn btn-gold office-whatsapp"
                 href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Message on WhatsApp
+                <MessageCircle size={17} aria-hidden="true" /> Message on WhatsApp
+                <ArrowRight size={16} aria-hidden="true" />
               </a>
             </div>
           </div>
         </div>
       </section>
-      <section className="section" id="contact">
+      <section className="booking-cta-section" id="contact" aria-labelledby="booking-cta-heading">
         <div className="container">
-          <div className="cta">
-            <span className="eyebrow">Ready to Hit the Road?</span>
-            <h2 className="display">Your Next Trip Starts Here</h2>
-            <p className="sub">
-              Choose your car, ask about availability, and confirm the details directly with our
-              team.
-            </p>
-            <div className="actions">
-              <Link className="btn btn-gold" href="/cars">
-                Browse Cars →
+          <div className="booking-cta">
+            <div className="booking-cta-copy">
+              <h2 className="display" id="booking-cta-heading">
+                Your plans. Your car. Let’s go.
+              </h2>
+              <p>Find your car. Share your dates. We’ll help you take it from there.</p>
+            </div>
+            <div className="booking-cta-actions">
+              <Link className="btn booking-cta-primary" href="/cars">
+                Find your car <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <a
-                className="btn btn-green"
-                href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle size={18} /> Book on WhatsApp
-              </a>
-              <a
-                className="btn btn-outline"
-                href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}
-              >
-                <Phone size={17} /> Call Now
-              </a>
+              <div className="booking-cta-secondary">
+                <a
+                  href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle size={16} aria-hidden="true" /> WhatsApp us
+                </a>
+                <a href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}>
+                  <Phone size={15} aria-hidden="true" /> Call us
+                </a>
+              </div>
             </div>
           </div>
         </div>

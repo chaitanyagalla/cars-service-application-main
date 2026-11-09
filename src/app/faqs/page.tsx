@@ -11,7 +11,7 @@ export default async function FaqPage() {
           <div className="center">
             <span className="eyebrow">FAQ</span>
             <h1 className="display" style={{ fontSize: 55 }}>
-              Common Questions
+              Common <span className="text-accent">Questions</span>
             </h1>
             <p className="sub">Everything you need to know before submitting an enquiry.</p>
           </div>

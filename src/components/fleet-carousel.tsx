@@ -1,5 +1,9 @@
 'use client';
 
+// @refresh reset
+// Remount animation state when editing hooks during development.
+
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Children,
   useCallback,
@@ -23,11 +27,12 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
   const swiped = useRef(false);
   const instructionsId = useId();
   const [active, setActive] = useState(Math.min(1, Math.max(0, count - 1)));
-  const [hovered, setHovered] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState(false);
   const [inView, setInView] = useState(false);
   const [tabVisible, setTabVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const paginationStart = Math.max(0, Math.min(active - 1, count - 3));
 
   useEffect(() => {
     setActive(Math.min(1, Math.max(0, count - 1)));
@@ -64,16 +69,18 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
       const now = Date.now();
       if (!reducedMotion && now - lastMove.current < TRANSITION_DURATION) return;
       lastMove.current = now;
+      setHovered(null);
       setActive((current) => (current + direction + count) % count);
     },
     [count, reducedMotion],
   );
 
   useEffect(() => {
-    if (count < 2 || reducedMotion || hovered || focused || !inView || !tabVisible) return;
-    const interval = window.setInterval(() => move(1), ROTATION_INTERVAL);
-    return () => window.clearInterval(interval);
-  }, [count, reducedMotion, hovered, focused, inView, tabVisible, move]);
+    if (count < 2 || hovered !== null || focused || !inView || !tabVisible || reducedMotion) return;
+    // Restart the full delay after hover ends so the center card can settle first.
+    const timeout = window.setTimeout(() => move(1), ROTATION_INTERVAL);
+    return () => window.clearTimeout(timeout);
+  }, [count, active, hovered, focused, inView, tabVisible, reducedMotion, move]);
 
   if (!count) return <p className="center muted">Our fleet will be available soon.</p>;
 
@@ -86,7 +93,7 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
       aria-label="Our car fleet"
       aria-describedby={instructionsId}
       tabIndex={count > 1 ? 0 : undefined}
-      onFocusCapture={() => setFocused(true)}
+      onFocusCapture={(event) => setFocused(event.target.matches(':focus-visible'))}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
@@ -124,10 +131,11 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
       }}
     >
       <p className="sr-only" id={instructionsId}>
-        Cars rotate automatically. Hover over or focus the featured car to pause. Use the left and
-        right arrow keys or swipe to explore the fleet.
+        Cars rotate automatically every five seconds. Hover or keyboard focus pauses rotation. Use
+        the side arrows, pagination buttons, left and right arrow keys, or swipe to explore the
+        fleet.
       </p>
-      <div className="fleet-stage">
+      <div className="fleet-stage" id={instructionsId + '-stage'}>
         {cars.map((car, index) => {
           // Circular positions keep the last-to-first transition identical to every other step.
           const distance = (index - active + count) % count;
@@ -151,17 +159,59 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
               aria-roledescription="slide"
               aria-label={'Car ' + (index + 1) + ' of ' + count}
               aria-hidden={!featured}
-              inert={!featured}
               onPointerEnter={(event) => {
-                if (featured && event.pointerType === 'mouse') setHovered(true);
+                if (event.pointerType === 'mouse') setHovered(index);
               }}
-              onPointerLeave={() => setHovered(false)}
+              onPointerLeave={() => setHovered((current) => (current === index ? null : current))}
             >
-              {car}
+              <div className="fleet-slide-content" inert={!featured}>
+                {car}
+              </div>
             </div>
           );
         })}
       </div>
+      {count > 1 && (
+        <>
+          <div className="fleet-controls" role="group" aria-label="Car navigation">
+            <button
+              type="button"
+              className="fleet-nav"
+              aria-label="Previous car"
+              aria-controls={instructionsId + '-stage'}
+              onClick={() => move(-1)}
+            >
+              <ChevronLeft size={32} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="fleet-nav"
+              aria-label="Next car"
+              aria-controls={instructionsId + '-stage'}
+              onClick={() => move(1)}
+            >
+              <ChevronRight size={32} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="fleet-pagination">
+            <div className="fleet-dots" role="group" aria-label="Choose a car">
+              {cars.slice(paginationStart, paginationStart + 3).map((_, offset) => {
+                const index = paginationStart + offset;
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className="fleet-dot"
+                    aria-label={`Show car ${index + 1}`}
+                    aria-current={active === index ? 'true' : undefined}
+                    onClick={() => move(index - active)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

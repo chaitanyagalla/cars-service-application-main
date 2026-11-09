@@ -1,14 +1,41 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CheckCircle2, Phone, MessageCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronRight,
+  CircleCheck,
+  Clock3,
+  Cog,
+  FileText,
+  Fuel,
+  Gauge,
+  Luggage,
+  MapPin,
+  Phone,
+  Route,
+  Settings,
+  ShieldCheck,
+  Star,
+  UsersRound,
+} from 'lucide-react';
 import CustomerLayout from '@/components/customer-layout';
 import { BookingForm } from '@/components/booking-form';
-import { CarCard } from '@/components/site-shell';
+import CarGallery from '@/components/car-gallery';
+import { CarCard, WhatsAppIcon } from '@/components/site-shell';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/store';
 import { withCarRatings } from '@/lib/car-ratings';
 export const dynamic = 'force-dynamic';
+
+const categories: Record<string, { label: string; plural: string }> = {
+  HATCHBACK: { label: 'Hatchback', plural: 'hatchbacks' },
+  SEDAN: { label: 'Sedan', plural: 'sedans' },
+  MPV: { label: 'MPV', plural: 'MPVs' },
+  SUV: { label: 'SUV', plural: 'SUVs' },
+};
+const rupees = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
+
 export async function generateMetadata({
   params,
 }: {
@@ -16,11 +43,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const car = await prisma.car.findUnique({ where: { slug } });
+  if (!car || !car.published) return { title: 'Car not found' };
   return {
-    title: car ? `Rent ${car.name}` : 'Car not found',
-    description: car?.description || 'Find self-drive cars in Hyderabad',
+    title: `Rent ${car.name} in Hyderabad`,
+    description:
+      car.description?.trim() ||
+      `Self-drive ${car.name} for rent in Hyderabad from ${rupees(car.priceDay)} per day, with ${car.includedKm} km included.`,
   };
 }
+
 export default async function CarDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [record, settings] = await Promise.all([
@@ -32,198 +63,284 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
   const related = await withCarRatings(
     await prisma.car.findMany({
       where: { published: true, category: car.category, id: { not: car.id } },
+      orderBy: { sortOrder: 'asc' },
       take: 3,
     }),
   );
+
+  const category = categories[car.category] ?? {
+    label: car.category.charAt(0) + car.category.slice(1).toLowerCase(),
+    plural: 'cars',
+  };
+  const fuel = car.fuel.toLowerCase().replace(/\bcng\b/g, 'CNG');
+  const description =
+    car.description?.trim() ||
+    `A ${car.seats}-seater ${category.label.toLowerCase()} that runs on ${fuel}, with a ${car.transmission.toLowerCase()} gearbox. A practical pick for city errands and comfortable on weekend getaways.`;
+  const phoneHref = `tel:${settings.phoneNumber.replace(/\D/g, '')}`;
+  const whatsappDigits = settings.whatsappNumber.replace(/\D/g, '');
+  const alternativesHref = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(
+    `Hi! The ${car.name} is unavailable right now. Could you suggest a similar car?`,
+  )}`;
+
+  const otherRates = (
+    [
+      ['12 hours', car.price12h],
+      ['3 days', car.price3Days],
+      ['1 week', car.priceWeek],
+    ] as const
+  ).filter(([, price]) => price > 0);
   const specs = [
-    ['Seating Capacity', `${car.seats} Adults`],
-    ['Fuel Type', car.fuel],
-    ['Transmission', car.transmission],
-    ['Mileage', car.mileage || 'Ask us'],
-    ['Boot Space', car.bootSpace || 'Ask us'],
-    ['Engine', car.engine || 'Ask us'],
+    { icon: UsersRound, label: 'Seating', value: `${car.seats} adults` },
+    { icon: Fuel, label: 'Fuel type', value: car.fuel },
+    { icon: Settings, label: 'Transmission', value: car.transmission },
+    { icon: Gauge, label: 'Mileage', value: car.mileage },
+    { icon: Luggage, label: 'Boot space', value: car.bootSpace },
+    { icon: Cog, label: 'Engine', value: car.engine },
+  ].filter((spec) => spec.value?.trim());
+  const included = [
+    car.deposit === 0 && 'No security deposit',
+    `${car.includedKm} km of driving included`,
+    'Clear pricing for this car, with no hidden charges',
+    'Pickup or doorstep delivery, depending on your area',
+    'Support on call and WhatsApp, 24/7',
+  ].filter((item): item is string => Boolean(item));
+  const goodToKnow = [
+    {
+      icon: Route,
+      title: 'Extra distance',
+      text: `${rupees(car.extraKmRate)} per km after the first ${car.includedKm} km.`,
+    },
+    {
+      icon: Clock3,
+      title: 'Extra time',
+      text: `${rupees(car.extraHourRate)} per hour if you return the car later than booked.`,
+    },
+    {
+      icon: MapPin,
+      title: 'Out-of-state trips',
+      text: 'Share your route before booking so we can confirm permit terms.',
+    },
+    {
+      icon: FileText,
+      title: 'Documents',
+      text: 'We’ll tell you exactly what to bring when we confirm your booking.',
+    },
   ];
-  const prices = [
-    ['12 Hours', car.price12h],
-    ['24 Hours', car.priceDay],
-    ['3 Days', car.price3Days],
-    ['Weekly', car.priceWeek],
+  const steps = [
+    ['Share your trip', 'Tell us your pickup area, dates and timings.'],
+    [
+      'Get a confirmed quote',
+      'We check availability and send the final price and document list on WhatsApp.',
+    ],
+    ['Pick up and drive', 'Collect the car at the agreed time and place, and enjoy the drive.'],
   ];
+
   return (
     <CustomerLayout>
-      <section className="section">
+      <section className="detail-top" aria-labelledby="car-name">
         <div className="container">
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+              <li>
+                <Link href="/">Home</Link>
+                <ChevronRight size={14} aria-hidden="true" />
+              </li>
+              <li>
+                <Link href="/cars">Cars</Link>
+                <ChevronRight size={14} aria-hidden="true" />
+              </li>
+              <li aria-current="page">{car.name}</li>
+            </ol>
+          </nav>
           <div className="detail-hero">
-            <div>
-              <img className="detail-photo" src={car.imageUrl} alt={car.name} />
-              {car.gallery.length > 0 && (
-                <div style={{ display: 'flex', gap: 10, marginTop: 15, overflowX: 'auto' }}>
-                  {car.gallery.map((url, i) => (
-                    <img
-                      src={url}
-                      alt={`${car.name} view ${i + 2}`}
-                      key={url}
-                      width={120}
-                      height={75}
-                      style={{ borderRadius: 9, objectFit: 'cover' }}
-                    />
-                  ))}
-                </div>
+            <CarGallery name={car.name} images={[car.imageUrl, ...car.gallery]} />
+            <div className="detail-summary">
+              <div className="detail-tags">
+                <span className="detail-chip">{category.label}</span>
+                <span className={`detail-status${car.available ? ' is-open' : ''}`}>
+                  {car.available ? 'Available to enquire' : 'Currently unavailable'}
+                </span>
+              </div>
+              <h1 id="car-name">{car.name}</h1>
+              {car.rating != null && car.ratingCount > 0 && (
+                <p className="detail-rating">
+                  <Star size={16} aria-hidden="true" />
+                  <strong>{car.rating.toFixed(1)}</strong> / 5 from {car.ratingCount} completed{' '}
+                  {car.ratingCount === 1 ? 'rental' : 'rentals'}
+                </p>
               )}
-            </div>
-            <div>
-              <Link href="/cars" className="muted-link muted">
-                ← Back to Cars
-              </Link>
-              <div style={{ marginTop: 15 }}>
-                <span className="eyebrow">{car.category}</span>
+              <p className="detail-lede">{description}</p>
+              <ul className="detail-facts" aria-label="Key features">
+                <li>
+                  <UsersRound size={18} aria-hidden="true" /> {car.seats} seats
+                </li>
+                <li>
+                  <Fuel size={18} aria-hidden="true" /> {car.fuel}
+                </li>
+                <li>
+                  <Settings size={18} aria-hidden="true" /> {car.transmission}
+                </li>
+              </ul>
+
+              <div className="detail-pricing">
+                <p className="detail-price">
+                  {rupees(car.priceDay)} <span>per day</span>
+                </p>
+                <p className="detail-price-note">
+                  24-hour rental with {car.includedKm} km included
+                </p>
+                {otherRates.length > 0 ? (
+                  <dl className="detail-rates">
+                    {otherRates.map(([label, price]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{rupees(price)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="detail-price-note">
+                    Need it for 12 hours, a few days or a week? Ask us for a quote.
+                  </p>
+                )}
               </div>
-              <h1
-                className="display"
-                style={{ fontSize: 'clamp(40px,5vw,60px)', margin: '0 0 16px' }}
-              >
-                {car.name}
-              </h1>
-              <p className="muted">{car.description}</p>
-              <div className="detail-price" style={{ marginTop: 20 }}>
-                ₹{car.priceDay.toLocaleString('en-IN')}{' '}
-                <span className="muted" style={{ fontSize: 15, fontWeight: 400 }}>
-                  / 24 hours
-                </span>
-              </div>
-              <p className="note">
-                {car.available
-                  ? 'Enquiries open — confirm live availability with our team'
-                  : 'Currently unavailable — contact us for alternatives'}
-              </p>
-              <div className="actions" style={{ justifyContent: 'flex-start', marginTop: 25 }}>
-                <a
-                  className="btn btn-green"
-                  href={`/api/whatsapp/${car.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle size={19} /> Book on WhatsApp
-                </a>
-                <a
-                  className="btn btn-outline"
-                  href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}
-                >
-                  <Phone size={19} /> Call Now
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="section" style={{ background: 'var(--panel2)' }}>
-        <div className="container">
-          <h2 className="display">Specifications</h2>
-          <p className="sub" style={{ margin: '0 0 35px' }}>
-            Technical details and available features
-          </p>
-          <div className="specs">
-            {specs.map(([k, v]) => (
-              <div key={k} className="panel spec">
-                <span style={{ color: 'var(--gold)', fontSize: 22 }}>◆</span>
+
+              <dl className="detail-terms">
                 <div>
-                  <span>{k}</span>
-                  <strong>{v}</strong>
+                  <dt>Security deposit</dt>
+                  <dd>{rupees(car.deposit)}</dd>
                 </div>
+                <div>
+                  <dt>Included distance</dt>
+                  <dd>{car.includedKm} km</dd>
+                </div>
+                <div>
+                  <dt>Extra distance</dt>
+                  <dd>{rupees(car.extraKmRate)}/km</dd>
+                </div>
+              </dl>
+
+              <div className="detail-cta">
+                {car.available ? (
+                  <a
+                    className="btn btn-whatsapp"
+                    href={`/api/whatsapp/${car.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <WhatsAppIcon size={22} /> Check availability on WhatsApp
+                  </a>
+                ) : (
+                  <a
+                    className="btn btn-whatsapp"
+                    href={alternativesHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <WhatsAppIcon size={22} /> Ask about similar cars
+                  </a>
+                )}
+                <a className="btn btn-outline" href={phoneHref}>
+                  <Phone size={18} aria-hidden="true" /> Call now
+                </a>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="section">
-        <div className="container">
-          <div className="center">
-            <h2 className="display">Flexible Pricing</h2>
-            <p className="sub">Choose the duration that works best for your trip</p>
-          </div>
-          <div className="pricing-grid">
-            {prices.map(([duration, cost]) => (
-              <div className="panel pricing-card" key={duration}>
-                <h3>{duration}</h3>
-                <strong>
-                  {Number(cost) ? `₹${Number(cost).toLocaleString('en-IN')}` : 'Ask us'}
-                </strong>
-                <span>Rental only — confirm terms</span>
-              </div>
-            ))}
-          </div>
-          <div className="specs" style={{ marginTop: 22, gridTemplateColumns: '1fr 1fr' }}>
-            <div className="panel spec">
-              <div>
-                <strong>Extra Kilometer Charges</strong>
+              <p className="detail-reassure">
+                <ShieldCheck size={18} aria-hidden="true" />
                 <span>
-                  ₹{car.extraKmRate}/km after {car.includedKm} km
+                  No payment to enquire. We confirm availability, documents and the final price on
+                  WhatsApp before you book.
                 </span>
-              </div>
+              </p>
             </div>
-            <div className="panel spec">
-              <div>
-                <strong>Extra Hour Charges</strong>
-                <span>₹{car.extraHourRate}/hour beyond booking duration</span>
-              </div>
+            <div className="detail-specs-block">
+              <h2 id="specs-heading">Specifications</h2>
+              <dl className="detail-specs">
+                {specs.map(({ icon: Icon, label, value }) => (
+                  <div key={label}>
+                    <Icon size={22} aria-hidden="true" />
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: 'var(--panel2)' }}>
+
+      <section className="detail-section detail-band" aria-labelledby="terms-heading">
         <div className="container">
-          <h2 className="display">What&apos;s Included</h2>
-          <p className="sub" style={{ margin: '0 0 35px' }}>
-            Confirm specific inclusions, eligibility and conditions before payment.
-          </p>
-          <div className="included-grid">
-            {[
-              `₹${car.deposit} Security Deposit`,
-              `${car.includedKm} Included Kilometers`,
-              'WhatsApp Support',
-              'Pickup Coordination',
-              'Car-specific Pricing',
-              'All India Permit (verify terms)',
-            ].map((t) => (
-              <div key={t} className="panel included">
-                <CheckCircle2 size={19} />
-                {t}
-              </div>
-            ))}
+          <div className="detail-head">
+            <h2 id="terms-heading">Rental details</h2>
+            <p>What comes with every booking, and the charges to keep in mind.</p>
+          </div>
+          <div className="detail-terms-grid">
+            <div className="detail-card">
+              <h3>What&apos;s included</h3>
+              <ul className="detail-checklist">
+                {included.map((item) => (
+                  <li key={item}>
+                    <CircleCheck size={20} aria-hidden="true" /> {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="detail-card">
+              <h3>Good to know</h3>
+              <ul className="detail-notes">
+                {goodToKnow.map(({ icon: Icon, title, text }) => (
+                  <li key={title}>
+                    <Icon size={20} aria-hidden="true" />
+                    <div>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
-      <section className="section">
-        <div className="container">
-          <h2 className="display">Customer ratings</h2>
-          {car.ratingCount ? (
-            <p className="rating" style={{ fontSize: 22 }}>
-              ★ {car.rating!.toFixed(1)} / 5{' '}
-              <span className="muted">
-                from {car.ratingCount} completed {car.ratingCount === 1 ? 'rental' : 'rentals'}
-              </span>
-            </p>
-          ) : (
-            <p className="muted">No customer ratings yet.</p>
-          )}
-        </div>
-      </section>
+
       {car.available && (
-        <section className="section" id="booking">
-          <div className="container" style={{ maxWidth: 780 }}>
-            <div className="panel" style={{ padding: 26 }}>
+        <section className="detail-section" id="booking" aria-labelledby="book-heading">
+          <div className="container detail-booking">
+            <div>
+              <div className="detail-head">
+                <h2 id="book-heading">Book the {car.name} in three steps</h2>
+                <p>
+                  Prefer to share details up front? Fill in the form and we’ll take it from there.
+                </p>
+              </div>
+              <ol className="detail-steps">
+                {steps.map(([title, text]) => (
+                  <li key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="detail-card detail-form-card">
               <BookingForm carId={car.id} />
             </div>
           </div>
         </section>
       )}
+
       {related.length > 0 && (
-        <section className="section">
+        <section className="detail-section detail-band" aria-labelledby="similar-heading">
           <div className="container">
-            <h2 className="display">Similar Cars</h2>
-            <p className="sub" style={{ margin: '0 0 35px' }}>
-              You might also like these vehicles
-            </p>
+            <div className="detail-head detail-head-row">
+              <div>
+                <h2 id="similar-heading">More {category.plural} you might like</h2>
+                <p>Similar cars from our Hyderabad fleet.</p>
+              </div>
+              <Link className="detail-all-link" href="/cars">
+                View all cars <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
             <div className="car-grid">
               {related.map((c) => (
                 <CarCard key={c.id} car={c} />
