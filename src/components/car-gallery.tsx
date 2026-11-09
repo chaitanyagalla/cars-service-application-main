@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import styles from './car-gallery.module.css';
 
 export default function CarGallery({ name, images }: { name: string; images: string[] }) {
   const photos = [...new Set(images.filter(Boolean))];
@@ -17,6 +19,29 @@ export default function CarGallery({ name, images }: { name: string; images: str
           }
         />
       </div>
+      {photos.length > 1 && (
+        <div className={styles.controls}>
+          <button
+            type="button"
+            aria-label="Previous car photo"
+            onClick={() => setActive((active - 1 + photos.length) % photos.length)}
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+            Previous
+          </button>
+          <span role="status">
+            Photo {Math.min(active + 1, photos.length)} of {photos.length}
+          </span>
+          <button
+            type="button"
+            aria-label="Next car photo"
+            onClick={() => setActive((active + 1) % photos.length)}
+          >
+            Next
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {photos.length > 1 && (
         <div className="detail-thumbs" role="group" aria-label={`${name} photos`}>
           {photos.map((url, index) => (

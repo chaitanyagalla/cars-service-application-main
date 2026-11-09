@@ -7,7 +7,13 @@ const mocks = vi.hoisted(() => ({
   cookies: new Map<string, string>(),
   db: {
     session: { findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
-    adminUser: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    adminUser: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     auditLog: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
     bookingIntent: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     car: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -72,6 +78,7 @@ beforeEach(() => {
   mocks.db.session.create.mockResolvedValue({ id: 'session-1' });
   mocks.db.adminUser.create.mockResolvedValue({ id: 'admin-2' });
   mocks.db.adminUser.findMany.mockResolvedValue([]);
+  mocks.db.adminUser.count.mockResolvedValue(0);
   mocks.db.auditLog.findMany.mockResolvedValue([]);
   mocks.db.auditLog.count.mockResolvedValue(0);
 });
@@ -354,6 +361,31 @@ describe('automatic car URLs', () => {
     });
   });
 
+  it('saves gallery photos with the cover and can remove gallery photos on edit', async () => {
+    await signedIn();
+    const gallery = [
+      'https://res.cloudinary.com/demo/image/upload/interior.jpg',
+      'https://res.cloudinary.com/demo/image/upload/rear.jpg',
+    ];
+    expect(
+      (await adminCreate(req('/api/admin/cars', { ...carInput, gallery }), createParams())).status,
+    ).toBe(201);
+    expect(mocks.db.car.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ imageUrl: carInput.imageUrl, gallery }),
+    });
+    expect(
+      (
+        await adminUpdate(
+          req('/api/admin/cars/car-1', { ...carInput, gallery: [] }),
+          updateParams(),
+        )
+      ).status,
+    ).toBe(200);
+    expect(mocks.db.car.update).toHaveBeenCalledWith({
+      where: { id: 'car-1' },
+      data: expect.objectContaining({ imageUrl: carInput.imageUrl, gallery: [] }),
+    });
+  });
   it('chooses the next free suffix when cars already have the same name', async () => {
     await signedIn();
     mocks.db.car.findMany.mockResolvedValue([{ slug: 'maruti-swift' }, { slug: 'maruti-swift-2' }]);

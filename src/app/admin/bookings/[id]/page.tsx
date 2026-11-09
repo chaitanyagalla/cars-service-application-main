@@ -28,9 +28,7 @@ export default async function LeadDetails({ params }: { params: Promise<{ id: st
       <a className="small-btn" href="/admin/bookings">
         ← All enquiries
       </a>
-      <h1 className="serif" style={{ fontSize: 36, marginTop: 20 }}>
-        Enquiry details
-      </h1>
+      <h1 className="serif admin-page-title admin-lead-title">Enquiry details</h1>
       <p className="note">Reference: {lead.id}</p>
       <dl className="panel lead-details">
         {[
@@ -48,11 +46,14 @@ export default async function LeadDetails({ params }: { params: Promise<{ id: st
           </div>
         ))}
       </dl>
-      <section className="panel" style={{ padding: 24, margin: '20px 0' }}>
+      <section className="panel admin-lead-request" style={{ padding: 24, margin: '20px 0' }}>
         <h2 style={{ fontSize: 20, fontWeight: 750 }}>Customer request</h2>
         <p className="lead-note">{lead.notes || 'No additional notes.'}</p>
         {number && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
+          <div
+            className="admin-contact-actions"
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 }}
+          >
             <a className="btn btn-outline" href={`tel:+${number}`}>
               Call customer
             </a>

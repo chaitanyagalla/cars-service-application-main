@@ -1,0 +1,26 @@
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 9px;
+  background: white;
+  color: var(--ink);
+  font-weight: 600;
+}
+.controls button:hover {
+  background: var(--tint);
+  border-color: var(--ink);
+}
