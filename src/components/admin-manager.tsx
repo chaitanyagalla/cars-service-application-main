@@ -5,6 +5,7 @@ import type { Resource } from '@/lib/admin-data';
 import { formatLocationName } from '@/lib/location-names';
 import { queryHref, type PageInfo } from '@/lib/admin-query';
 import { useFeedback } from '@/components/app-feedback';
+import ImageCropDialog from '@/components/image-crop-dialog';
 import {
   fetchAdminRows,
   sendAdminMutation,
@@ -196,6 +197,8 @@ export default function AdminManager({
   const [lastChangeConfirmed, setLastChangeConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [openingCrop, setOpeningCrop] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
   const [stale, setStale] = useState(false);
@@ -498,6 +501,48 @@ export default function AdminManager({
       setUploading(false);
     }
   }
+  function chooseImage(file: File) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast('Unsupported image', {
+        variant: 'danger',
+        description: 'Choose a JPEG, PNG or WebP photo.',
+        timeout: 6000,
+      });
+      return;
+    }
+    // Cropping re-encodes the photo, so large camera originals are fine here.
+    if (file.size > 25 * 1024 * 1024) {
+      toast('Image too large', {
+        variant: 'danger',
+        description: 'Choose a photo under 25MB.',
+        timeout: 6000,
+      });
+      return;
+    }
+    setCropFile(file);
+  }
+  async function recropCurrentImage() {
+    const url = String(form.imageUrl || '');
+    if (!url || openingCrop) return;
+    setOpeningCrop(true);
+    try {
+      const res = await fetch(url, { credentials: 'omit' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) throw new Error();
+      const name = decodeURIComponent(new URL(url, location.href).pathname.split('/').pop() || '');
+      setCropFile(new File([blob], name || 'car', { type: blob.type }));
+    } catch {
+      toast('Could not open this image for cropping', {
+        variant: 'danger',
+        description:
+          'Its host does not allow it to be edited here. Download the photo and use Upload instead.',
+        timeout: 8000,
+      });
+    } finally {
+      setOpeningCrop(false);
+    }
+  }
   async function remove(id: string) {
     if (
       writesBlocked ||
@@ -625,22 +670,22 @@ export default function AdminManager({
         }}
       >
         <div>
-          <Heading className="serif" style={{ fontSize: leadDetails ? 26 : 39, marginBottom: 5 }}>
-            {leadDetails
-              ? 'Enquiry status'
-              : (
-                  {
-                    cars: 'Cars & Prices',
-                    locations: 'Service Areas',
-                    faqs: 'FAQs',
-                    testimonials: 'Testimonials',
-                    bookings: 'Booking Leads',
-                    settings: 'Site Settings',
-                    users: 'Staff Users',
-                    audits: 'Audit Trail',
-                  } as Record<string, string>
-                )[resource]}
-          </Heading>
+          <h1 className="display" style={{ fontSize: 39, marginBottom: 5 }}>
+            {
+              (
+                {
+                  cars: 'Cars & Prices',
+                  locations: 'Service Areas',
+                  faqs: 'FAQs',
+                  testimonials: 'Testimonials',
+                  bookings: 'Booking Leads',
+                  settings: 'Site Settings',
+                  users: 'Staff Users',
+                  audits: 'Audit Trail',
+                } as Record<string, string>
+              )[resource]
+            }
+          </h1>
           <p className="note">
             {resource === 'bookings'
               ? 'Only saved enquiry forms appear here. Status changes are manual and do not reserve a vehicle or collect payment. Direct WhatsApp clicks are not tracked.'
@@ -684,38 +729,15 @@ export default function AdminManager({
           )}
         </div>
       </div>
-      {filterControls}
-      <p className="note" style={{ marginBottom: 14 }}>
-        {lastUpdated
-          ? `Last loaded: ${new Date(lastUpdated).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} (India time)`
-          : 'List loaded with this page.'}
-        {resource === 'bookings' &&
-          !leadDetails &&
-          ' Checks for new enquiries every 30 seconds while this tab is visible and no editor is open.'}
-      </p>
-      {(stale || refreshError || sessionExpired) && (
-        <div role="status" style={{ color: '#ffcb78', marginBottom: 14 }}>
-          {refreshError ||
-            (sessionExpired
-              ? sessionExpiredMessage
-              : 'The list may be out of date. Refresh it before making further changes.')}
-          {refreshError && message && lastChangeConfirmed && (
-            <p>The confirmed change above was saved. Refresh the list rather than repeating it.</p>
-          )}
-          {sessionExpired && (
-            <p>
-              <a
-                className="small-btn"
-                href="/admin/login"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Sign in in a new tab
-              </a>{' '}
-              Then return here and select Refresh list.
-            </p>
-          )}
-        </div>
+      {message && (
+        <p role="status" style={{ color: 'var(--success)', marginBottom: 14 }}>
+          {message}
+        </p>
+      )}
+      {error && (
+        <p role="alert" style={{ color: 'var(--error)', marginBottom: 14 }}>
+          {error}
+        </p>
       )}
       {editable && editing !== null && (
         <div className="panel" style={{ marginBottom: 24 }}>
@@ -733,151 +755,121 @@ export default function AdminManager({
             </button>
           </div>
           <form className="admin-form" onSubmit={save}>
-            <fieldset disabled={busy || uploading} style={{ display: 'contents' }}>
-              {fields[resource].map((f) => (
-                <label
-                  className={`field ${f.wide ? 'wide' : ''} ${f.key === 'featured' ? 'admin-popular-field' : ''}`}
-                  key={f.key}
-                >
-                  <span className="form-label">{f.label}</span>
-                  {f.kind === 'checkbox' ? (
-                    <input
-                      type="checkbox"
-                      checked={Boolean(form[f.key])}
-                      onChange={(e) => setForm({ ...form, [f.key]: e.target.checked })}
-                      style={{ height: 20, width: 20, accentColor: '#ffb300' }}
-                    />
-                  ) : f.kind === 'select' ? (
-                    <select
-                      className="input"
-                      value={String(form[f.key] || f.options?.[0])}
-                      onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                    >
-                      {f.options?.map((v) => (
-                        <option value={v} key={v}>
-                          {v}
-                        </option>
-                      ))}
-                    </select>
-                  ) : f.kind === 'textarea' ? (
-                    <textarea
-                      rows={4}
-                      className="input"
-                      value={
-                        f.key === 'gallery'
-                          ? Array.isArray(form.gallery)
-                            ? form.gallery.join('\n')
-                            : String(form.gallery || '')
-                          : String(form[f.key] ?? '')
-                      }
-                      onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                      required={f.required}
-                    />
-                  ) : (
-                    <input
-                      className="input"
-                      type={
-                        f.kind === 'number'
-                          ? 'number'
-                          : f.kind === 'password'
-                            ? 'password'
-                            : f.kind === 'email'
-                              ? 'email'
-                              : 'text'
-                      }
-                      step={f.key === 'rating' ? '0.1' : f.kind === 'number' ? '1' : undefined}
-                      min={
-                        f.kind === 'number'
-                          ? resource === 'locations' && f.key === 'sortOrder'
-                            ? 1
-                            : 0
-                          : undefined
-                      }
-                      max={
-                        resource === 'locations' && f.key === 'sortOrder'
-                          ? rows.length + (editing === 'new' ? 1 : 0)
-                          : undefined
-                      }
-                      value={
-                        resource === 'locations' && f.key === 'sortOrder' && form[f.key] !== ''
-                          ? Number(form[f.key]) + 1
-                          : String(form[f.key] ?? '')
-                      }
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          [f.key]:
-                            resource === 'locations' &&
-                            f.key === 'sortOrder' &&
-                            e.target.value !== ''
-                              ? Number(e.target.value) - 1
-                              : e.target.value,
-                        })
-                      }
-                      onBlur={
-                        resource === 'locations' && f.key === 'name'
-                          ? () =>
-                              setForm((current) => ({
-                                ...current,
-                                name: formatLocationName(String(current.name ?? '')),
-                              }))
-                          : undefined
-                      }
-                      required={f.required}
-                      autoComplete={f.kind === 'password' ? 'new-password' : undefined}
-                    />
-                  )}
-                  {f.help && <span className="note">{f.help}</span>}
-                </label>
-              ))}
-              {resource === 'cars' && (
-                <div className="wide">
-                  <label className="form-label" htmlFor="admin-image-upload">
-                    Optional image upload (Cloudinary must be configured)
-                  </label>
+            {fields[resource].map((f) => (
+              <label className={`field ${f.wide ? 'wide' : ''}`} key={f.key}>
+                <span className="form-label">{f.label}</span>
+                {f.kind === 'checkbox' ? (
                   <input
-                    id="admin-image-upload"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    disabled={writesBlocked}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void uploadImage(file);
-                      e.currentTarget.value = '';
+                    type="checkbox"
+                    checked={Boolean(form[f.key])}
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.checked })}
+                    style={{ height: 20, width: 20, accentColor: 'var(--ink)' }}
+                  />
+                ) : f.kind === 'select' ? (
+                  <select
+                    className="input"
+                    value={String(form[f.key] || f.options?.[0])}
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                  >
+                    {f.options?.map((v) => (
+                      <option value={v} key={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                ) : f.kind === 'textarea' ? (
+                  <textarea
+                    rows={4}
+                    className="input"
+                    value={
+                      f.key === 'gallery'
+                        ? Array.isArray(form.gallery)
+                          ? form.gallery.join('\n')
+                          : String(form.gallery || '')
+                        : String(form[f.key] ?? '')
+                    }
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                    required={f.required}
+                  />
+                ) : (
+                  <input
+                    className="input"
+                    type={
+                      f.kind === 'number'
+                        ? 'number'
+                        : f.kind === 'password'
+                          ? 'password'
+                          : f.kind === 'email'
+                            ? 'email'
+                            : 'text'
+                    }
+                    step={f.key === 'rating' ? '0.1' : f.kind === 'number' ? '1' : undefined}
+                    min={f.kind === 'number' ? 0 : undefined}
+                    value={String(form[f.key] ?? '')}
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                    required={f.required}
+                    autoComplete={f.kind === 'password' ? 'new-password' : undefined}
+                  />
+                )}
+              </label>
+            ))}
+            {resource === 'cars' && (
+              <div className="wide">
+                <label className="form-label" htmlFor="admin-image-upload">
+                  Upload cover image (Cloudinary must be configured)
+                </label>
+                <input
+                  id="admin-image-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-describedby="admin-image-upload-help"
+                  disabled={uploading || openingCrop}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) chooseImage(file);
+                  }}
+                />
+                <p className="note" id="admin-image-upload-help" style={{ marginTop: 6 }}>
+                  You&apos;ll crop the photo to the car card frame (16:9) before it uploads, so it
+                  fills the card with no borders.
+                </p>
+                {uploading && <p className="note">Uploading image...</p>}
+                {form.imageUrl && (
+                  <div className="admin-cover-preview">
+                    <img src={String(form.imageUrl)} alt="Cover preview, as shown on car cards" />
+                    {!/\.svg(\?|$)/i.test(String(form.imageUrl)) && (
+                      <button
+                        type="button"
+                        className="small-btn"
+                        disabled={uploading || openingCrop}
+                        onClick={() => void recropCurrentImage()}
+                      >
+                        {openingCrop ? 'Opening…' : 'Adjust crop'}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {cropFile && (
+                  <ImageCropDialog
+                    file={cropFile}
+                    onCancel={() => setCropFile(null)}
+                    onConfirm={(cropped) => {
+                      setCropFile(null);
+                      void uploadImage(cropped);
                     }}
                   />
-                  {uploading && <p className="note">Uploading image...</p>}
-                  {form.imageUrl && (
-                    <div style={{ marginTop: 10 }}>
-                      <img
-                        src={String(form.imageUrl)}
-                        alt="Cover preview"
-                        style={{ width: 240, height: 135, objectFit: 'cover', borderRadius: 10 }}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="wide" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <Button
-                  type="submit"
-                  isPending={busy}
-                  isDisabled={writesBlocked}
-                  className="hero-ui-btn"
-                >
-                  {busy ? 'Saving...' : uploading ? 'Uploading image...' : 'Save Changes'}
-                </Button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={closeEditor}
-                  disabled={busy || uploading}
-                >
-                  Cancel
-                </button>
-                {dirty && <span className="note">Unsaved changes</span>}
+                )}
               </div>
-            </fieldset>
+            )}
+            <div className="wide" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <Button type="submit" isPending={busy} className="hero-ui-btn">
+                {busy ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <button type="button" className="btn btn-outline" onClick={() => setEditing(null)}>
+                Cancel
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -955,7 +947,7 @@ export default function AdminManager({
                           className="small-btn"
                           disabled={writesBlocked}
                           onClick={() => remove(row.id)}
-                          style={{ color: '#f88' }}
+                          style={{ color: 'var(--error)' }}
                         >
                           Delete
                         </button>

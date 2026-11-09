@@ -8,7 +8,7 @@ export default async function Privacy() {
     <CustomerLayout>
       <section className="section">
         <div className="container" style={{ maxWidth: 820 }}>
-          <h1 className="serif" style={{ fontSize: 52 }}>
+          <h1 className="display" style={{ fontSize: 52 }}>
             Privacy Policy
           </h1>
           <p className="sub" style={{ margin: '20px 0 40px' }}>

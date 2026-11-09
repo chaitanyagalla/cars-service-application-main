@@ -48,10 +48,10 @@ export function BookingForm({ carId }: { carId: string }) {
   return (
     <form onSubmit={submit} className="booking-form">
       <div className="full">
-        <h3 style={{ fontSize: 23, fontWeight: 750 }}>Send an enquiry on WhatsApp</h3>
+        <h3 className="booking-form-title">Your trip details</h3>
         <p className="note">
-          Save the enquiry for our team, then open a prefilled WhatsApp message. Sending the message
-          is your final step.
+          We&apos;ll save your enquiry and open WhatsApp with these details filled in. Nothing is
+          sent until you tap send.
         </p>
       </div>
       <label className="field">
@@ -87,20 +87,26 @@ export function BookingForm({ carId }: { carId: string }) {
         />
       </label>
       <label className="field">
-        <span className="form-label">Pickup date/time (optional)</span>
+        <span className="form-label">Pickup date &amp; time (optional)</span>
         <input className="input" name="pickupDate" type="datetime-local" />
       </label>
       <label className="field">
-        <span className="form-label">Return date/time (optional)</span>
+        <span className="form-label">Return date &amp; time (optional)</span>
         <input className="input" name="returnDate" type="datetime-local" />
       </label>
       <label className="field full">
-        <span className="form-label">Notes</span>
-        <textarea className="input" name="notes" rows={3} maxLength={500} />
+        <span className="form-label">Anything else we should know?</span>
+        <textarea
+          className="input"
+          name="notes"
+          rows={3}
+          maxLength={500}
+          placeholder="e.g. airport pickup, outstation trip to Vijayawada"
+        />
       </label>
       <div className="full">
         <Button className="hero-ui-btn" type="submit" isPending={busy} fullWidth>
-          {busy ? 'Preparing enquiry...' : 'Save enquiry & open WhatsApp →'}
+          {busy ? 'Preparing your enquiry...' : 'Continue to WhatsApp →'}
         </Button>
       </div>
     </form>

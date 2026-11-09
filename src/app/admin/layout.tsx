@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="admin-layout">
       <aside className="admin-aside">
-        <Link href="/" style={{ color: '#ffbb00', fontWeight: 800 }}>
+        <Link href="/" style={{ color: 'var(--ink)', fontWeight: 800 }}>
           UNIVERSAL
         </Link>
         <p className="note">
