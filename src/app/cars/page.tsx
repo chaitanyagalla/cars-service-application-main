@@ -15,7 +15,7 @@ export default async function CarsPage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">Our Fleet</span>
-            <h1 className="serif" style={{ fontSize: 'clamp(38px,5vw,62px)', marginBottom: 15 }}>
+            <h1 className="display" style={{ fontSize: 'clamp(38px,5vw,62px)', marginBottom: 15 }}>
               Choose Your Perfect Ride
             </h1>
             <p className="sub">

@@ -31,7 +31,7 @@ export function AdminLogin() {
       className="panel"
       style={{ maxWidth: 440, margin: '80px auto', padding: 34 }}
     >
-      <h1 className="serif" style={{ fontSize: 38, marginBottom: 7 }}>
+      <h1 className="display" style={{ fontSize: 38, marginBottom: 7 }}>
         Admin Sign In
       </h1>
       <p className="note" style={{ marginBottom: 25 }}>

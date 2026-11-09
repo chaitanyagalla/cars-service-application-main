@@ -11,7 +11,7 @@ export default async function AboutPage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">About Our Service</span>
-            <h1 className="serif" style={{ fontSize: 55 }}>
+            <h1 className="display" style={{ fontSize: 55 }}>
               Freedom to Explore, Your Way
             </h1>
             <p className="sub">{settings.description}</p>

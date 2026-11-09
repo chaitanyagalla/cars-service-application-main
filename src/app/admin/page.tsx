@@ -26,7 +26,7 @@ export default async function AdminDashboard() {
   });
   return (
     <>
-      <h1 className="serif" style={{ fontSize: 43 }}>
+      <h1 className="display" style={{ fontSize: 43 }}>
         Admin Dashboard
       </h1>
       <p className="muted">Manage your live fleet, bookings and website content.</p>

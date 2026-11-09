@@ -10,7 +10,7 @@ export default async function FaqPage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow">FAQ</span>
-            <h1 className="serif" style={{ fontSize: 55 }}>
+            <h1 className="display" style={{ fontSize: 55 }}>
               Common Questions
             </h1>
             <p className="sub">Everything you need to know before submitting an enquiry.</p>
