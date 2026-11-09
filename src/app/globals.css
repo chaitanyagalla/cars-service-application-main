@@ -438,14 +438,168 @@ img {
   overflow: hidden;
   background: var(--bg);
 }
-.hero-art {
+.hero-art,
+.hero-car-art {
   position: absolute;
   inset: 0 0 0 44%;
+  container-type: size;
+  pointer-events: none;
+}
+.hero-art {
   z-index: -2;
 }
-.hero-art img {
-  object-fit: contain;
-  object-position: right center;
+.hero-car-art {
+  z-index: 0;
+}
+.hero-art-frame {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: min(100cqw, calc(100cqh * 4 / 3));
+  aspect-ratio: 4 / 3;
+  transform: translateY(-50%);
+}
+.hero-car {
+  position: absolute;
+  /* Align the cutout's visible edges with the SUV in the original 1448 x 1086 image. */
+  left: 6.1%;
+  bottom: 7.35%;
+  width: 76.5%;
+  isolation: isolate;
+  opacity: 0;
+  animation: hero-car-fallback 0s 6s forwards;
+}
+.hero-car img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-car::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 5%;
+  right: 3%;
+  bottom: 1%;
+  height: 13%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #13191f66, #13191f26 45%, transparent 72%);
+  filter: blur(6px);
+}
+/* hero-scene.tsx drives the car's transform while playing. */
+.hero:is([data-intro='playing'], [data-intro='skipped'], [data-intro='complete']) .hero-car {
+  opacity: 1;
+  animation: none;
+}
+/*
+ * The copy and the header nav wait for the intro. Keep these two rules separate: merged with the
+ * header's :has() selector, the compiled rule out-ranks the playing rule and the copy stays hidden.
+ * The fallback animations restore everything if hydration never completes.
+ */
+.hero [data-hero-reveal] {
+  opacity: 0;
+  visibility: hidden;
+  animation: hero-content-fallback 0s 6s forwards;
+}
+.header:has(+ main .hero) :is(.desktop-nav, .head-actions, .mobile-nav) {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-32px);
+  animation: hero-content-fallback 0s 6s forwards;
+}
+/* Lower rows trail slightly, so the wipe leans forward like a speed line. */
+.hero [data-hero-reveal='badge'] {
+  --hero-trail: 0px;
+}
+.hero [data-hero-reveal='headline-first'] {
+  --hero-trail: 12px;
+}
+.hero [data-hero-reveal='headline-second'] {
+  --hero-trail: 24px;
+}
+.hero [data-hero-reveal='description'] {
+  --hero-trail: 36px;
+}
+.hero [data-hero-reveal='actions'] {
+  --hero-trail: 48px;
+}
+.hero [data-hero-reveal='benefits'] {
+  --hero-trail: 60px;
+}
+/*
+ * hero-scene.tsx sets --hero-reveal (0 to 1) every frame from the car's measured position, so the
+ * copy is drawn out of the car's wake from left to right and glides into place as the car parks.
+ * --hero-copy-extent is where the text ends; the extra 180px covers the 120px feather plus the
+ * largest trail, so a reveal of 1 shows everything.
+ */
+.hero[data-intro='playing'] [data-hero-reveal] {
+  --hero-reveal-edge: calc(
+    var(--hero-reveal, 0) * (var(--hero-copy-extent, 100cqw) + 180px) - var(--hero-trail)
+  );
+  animation: none;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(calc((1 - var(--hero-reveal, 0)) * -48px));
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(var(--hero-reveal-edge) - 120px),
+    transparent var(--hero-reveal-edge)
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(var(--hero-reveal-edge) - 120px),
+    transparent var(--hero-reveal-edge)
+  );
+}
+.hero[data-intro='playing'] .actions {
+  pointer-events: none;
+}
+.hero[data-intro='playing'] .actions:focus-within {
+  transform: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.header:has(+ main .hero[data-intro='playing']) :is(.desktop-nav, .head-actions, .mobile-nav) {
+  animation: hero-header-reveal 1.5s 0.3s ease-out forwards;
+}
+.hero:is([data-intro='skipped'], [data-intro='complete']) [data-hero-reveal] {
+  animation: none;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.header:has(+ main .hero:is([data-intro='skipped'], [data-intro='complete']))
+  :is(.desktop-nav, .head-actions, .mobile-nav) {
+  animation: none;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+@keyframes hero-header-reveal {
+  from {
+    opacity: 0;
+    visibility: visible;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+}
+@keyframes hero-content-fallback {
+  to {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+}
+@keyframes hero-car-fallback {
+  to {
+    opacity: 1;
+  }
 }
 .hero::after {
   content: '';
@@ -458,6 +612,8 @@ img {
     linear-gradient(0deg, var(--bg) 0%, transparent 12%, transparent 92%, var(--bg) 100%);
 }
 .hero-inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-height: inherit;
   align-items: center;
@@ -465,6 +621,7 @@ img {
   padding-bottom: 38px;
 }
 .hero-copy {
+  container-type: inline-size;
   width: 60%;
   max-width: 810px;
 }
@@ -2845,14 +3002,15 @@ img {
     min-height: calc(100svh - 72px);
   }
   .hero::after {
-    background: linear-gradient(180deg, #ffffff60, #ffffff30 40%, #ffffff80 70%, white 100%);
+    /* The artwork sits below the copy on mobile; keep the landmark fully visible. */
+    background: none;
   }
   .hero-inner {
     min-height: inherit;
     align-items: flex-start;
     width: 100%;
     padding-top: 28px;
-    padding-bottom: 32px;
+    padding-bottom: calc(75vw + 32px);
   }
   .hero-copy {
     width: 100%;
@@ -2898,16 +3056,11 @@ img {
     font-size: 13px;
     line-height: 1.4;
   }
-  .hero-art {
-    inset: 56px 0 auto;
+  .hero-art,
+  .hero-car-art {
+    inset: auto 0 0;
     width: 100%;
-    height: clamp(300px, 90vw, 440px);
-    opacity: 0.38;
-    pointer-events: none;
-  }
-  .hero-art img {
-    object-fit: cover;
-    object-position: center;
+    height: 75vw;
   }
 }
 @media (max-width: 650px) {
@@ -3062,6 +3215,26 @@ img {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* hero-scene.tsx also skips the drive; these cover the time before it hydrates. */
+  .hero[data-intro] .hero-car,
+  .hero[data-intro] [data-hero-reveal] {
+    opacity: 1;
+    visibility: visible;
+    animation: none;
+    transform: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /* Kept apart from the rule above so the :has() selector cannot change its specificity. */
+  .header:has(+ main .hero[data-intro]) :is(.desktop-nav, .head-actions, .mobile-nav) {
+    opacity: 1;
+    visibility: visible;
+    animation: none;
+    transform: none;
+  }
+  .hero[data-intro] .actions {
+    pointer-events: auto;
+  }
   .catalog-categories button {
     transition: none;
   }

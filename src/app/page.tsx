@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   MapPin,
   MessageCircle,
@@ -16,6 +15,7 @@ import CustomerLayout from '@/components/customer-layout';
 import { CarCard } from '@/components/site-shell';
 import FleetCarousel from '@/components/fleet-carousel';
 import BookingJourney from '@/components/booking-journey';
+import HeroScene from '@/components/hero-scene';
 import { getCars, getSettings, getLocations, getFaqs, getTestimonials } from '@/lib/store';
 export const dynamic = 'force-dynamic';
 export default async function HomePage() {
@@ -29,41 +29,31 @@ export default async function HomePage() {
   const useReferenceHeadline = settings.headline === 'Drive Your Way. No Deposit.';
   return (
     <CustomerLayout>
-      <section className="hero" aria-labelledby="hero-heading">
-        <div className="hero-art">
-          <Image
-            src="/images/hyderabad-drive-light.webp"
-            alt="A black SUV on a Hyderabad road with Charminar in the background"
-            fill
-            sizes="(max-width: 760px) 100vw, 56vw"
-            loading="eager"
-            fetchPriority="high"
-          />
-        </div>
+      <HeroScene>
         <div className="container hero-inner">
           <div className="hero-copy">
-            <div className="eyebrow hero-eyebrow">
+            <div className="eyebrow hero-eyebrow" data-hero-reveal="badge">
               <Star size={16} fill="currentColor" aria-hidden="true" />
               Trusted Car Rentals in Hyderabad
             </div>
             <h1 className="display" id="hero-heading">
               {useReferenceHeadline ? (
                 <>
-                  <span>
+                  <span data-hero-reveal="headline-first">
                     Freedom to <em className="text-accent">drive.</em>
                   </span>
-                  <span>Without the extra cost.</span>
+                  <span data-hero-reveal="headline-second">Without the extra cost.</span>
                 </>
               ) : (
-                settings.headline
+                <span data-hero-reveal="headline-first">{settings.headline}</span>
               )}
             </h1>
-            <p className="sub">
+            <p className="sub" data-hero-reveal="description">
               {useReferenceHeadline
                 ? 'Choose from premium self-drive cars with zero deposit, clear pricing, and smooth pickup or delivery.'
                 : settings.description}
             </p>
-            <div className="actions">
+            <div className="actions" data-hero-reveal="actions">
               <Link className="btn btn-gold" href="/cars">
                 Explore Cars <ArrowRight size={21} aria-hidden="true" />
               </Link>
@@ -76,7 +66,7 @@ export default async function HomePage() {
                 Get a Quote
               </a>
             </div>
-            <ul className="hero-benefits" aria-label="Rental benefits">
+            <ul className="hero-benefits" aria-label="Rental benefits" data-hero-reveal="benefits">
               <li>
                 <BadgeCheck size={26} aria-hidden="true" /> Verified Fleet
               </li>
@@ -89,7 +79,7 @@ export default async function HomePage() {
             </ul>
           </div>
         </div>
-      </section>
+      </HeroScene>
       <section className="section fleet-section" id="cars" aria-labelledby="fleet-heading">
         <div className="container">
           <div className="center">
