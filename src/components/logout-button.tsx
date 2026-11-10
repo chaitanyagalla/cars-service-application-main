@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { toast } from '@heroui/react';
 import { useFeedback } from '@/components/app-feedback';
+import { SteeringLoader } from '@/components/steering-loader';
 
 export function LogoutButton() {
   const [busy, setBusy] = useState(false);
@@ -23,7 +24,7 @@ export function LogoutButton() {
   return (
     <div>
       <button type="button" className="small-btn" onClick={logout} disabled={busy}>
-        {busy ? 'Signing out...' : 'Sign out'}
+        {busy ? <SteeringLoader label="Signing out…" /> : 'Sign out'}
       </button>
     </div>
   );

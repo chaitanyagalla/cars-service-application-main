@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ImagePlus, LoaderCircle, X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
+import { SteeringWheel } from '@/components/steering-loader';
 import {
   MAX_GALLERY_PHOTOS,
   PHOTO_TYPES,
@@ -125,7 +126,7 @@ export function AdminGalleryUpload({
       </p>
       {progress && (
         <div className="admin-photo-progress" role="status">
-          <LoaderCircle className="admin-photo-spinner" size={17} aria-hidden="true" />
+          <SteeringWheel size={20} />
           <span>
             Uploading photos: {progress.done} of {progress.total} processed…
           </span>

@@ -1,0 +1,65 @@
+.loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.wheel {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  transform-origin: center;
+  animation: steer 1.8s ease-in-out infinite;
+}
+
+.section,
+.page {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2rem;
+  color: var(--ink, #13253f);
+}
+
+.section {
+  min-height: 180px;
+}
+
+.page {
+  min-height: 65vh;
+  min-height: 65svh;
+}
+
+.section .wheel,
+.page .wheel {
+  filter: drop-shadow(0 6px 12px rgb(19 37 63 / 12%));
+}
+
+.label {
+  font-size: inherit;
+}
+
+.section .label,
+.page .label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+@keyframes steer {
+  0%,
+  100% {
+    transform: rotate(-35deg);
+  }
+  50% {
+    transform: rotate(35deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel {
+    animation: none;
+  }
+}

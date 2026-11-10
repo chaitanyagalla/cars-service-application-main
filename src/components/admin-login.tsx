@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Button, toast } from '@heroui/react';
+import { SteeringLoader } from '@/components/steering-loader';
 export function AdminLogin() {
   const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,7 +61,7 @@ export function AdminLogin() {
         />
       </label>
       <Button className="hero-ui-btn" type="submit" fullWidth isPending={busy}>
-        {busy ? 'Signing in...' : 'Sign In'}
+        {busy ? <SteeringLoader label="Signing in…" /> : 'Sign In'}
       </Button>
     </form>
   );

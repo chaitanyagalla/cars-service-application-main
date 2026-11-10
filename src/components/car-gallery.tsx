@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './car-gallery.module.css';
+import { LoadingCarImage } from './loading-car-image';
 
 export default function CarGallery({ name, images }: { name: string; images: string[] }) {
   const photos = [...new Set(images.filter(Boolean))];
@@ -10,7 +11,7 @@ export default function CarGallery({ name, images }: { name: string; images: str
   return (
     <div className="detail-gallery">
       <div className="detail-photo">
-        <img
+        <LoadingCarImage
           src={current}
           alt={
             photos.length > 1

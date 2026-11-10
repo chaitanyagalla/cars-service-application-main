@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, toast } from '@heroui/react';
-import { Images, Upload, LoaderCircle } from 'lucide-react';
+import { Images, Upload } from 'lucide-react';
+import { SteeringLoader, SteeringWheel } from '@/components/steering-loader';
 import type { Resource } from '@/lib/admin-data';
 import { formatLocationName } from '@/lib/location-names';
 import type { PageInfo } from '@/lib/admin-query';
@@ -187,6 +188,7 @@ export default function AdminManager({
   const [message, setMessage] = useState('');
   const [lastChangeConfirmed, setLastChangeConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const coverInput = useRef<HTMLInputElement>(null);
@@ -575,6 +577,7 @@ export default function AdminManager({
     setMessage('');
     setLastChangeConfirmed(false);
     try {
+      setDeletingId(id);
       const result = await sendAdminMutation(`/api/admin/${resource}/${id}`, { method: 'DELETE' });
       if (result.kind !== 'saved') {
         mutationFailed(result);
@@ -589,6 +592,7 @@ export default function AdminManager({
         resource === 'cars' ? 'Car deleted successfully.' : 'Record deleted.',
       );
     } finally {
+      setDeletingId(null);
       mutationInFlight.current = false;
       setBusy(false);
     }
@@ -759,7 +763,7 @@ export default function AdminManager({
               if (!mutationInFlight.current && !uploading) void reload();
             }}
           >
-            {refreshing ? 'Refreshing...' : 'Refresh list'}
+            {refreshing ? <SteeringLoader label="Refreshing…" /> : 'Refresh list'}
           </button>
           {resource === 'bookings' && !leadDetails && (
             <button
@@ -768,7 +772,7 @@ export default function AdminManager({
               onClick={exportLeads}
               disabled={exporting || locked}
             >
-              {exporting ? 'Exporting...' : 'Export filtered CSV'}
+              {exporting ? <SteeringLoader label="Exporting…" /> : 'Export filtered CSV'}
             </button>
           )}
           {canCreate && (
@@ -898,7 +902,7 @@ export default function AdminManager({
                             disabled={writesBlocked || Boolean(cropFile)}
                             onClick={() => void recropCurrentImage()}
                           >
-                            {openingCrop ? 'Opening…' : 'Adjust crop'}
+                            {openingCrop ? <SteeringLoader label="Opening…" /> : 'Adjust crop'}
                           </button>
                         )}
                       </div>
@@ -925,11 +929,7 @@ export default function AdminManager({
                       onClick={() => coverInput.current?.click()}
                     >
                       {uploading ? (
-                        <LoaderCircle
-                          className="admin-photo-spinner"
-                          size={18}
-                          aria-hidden="true"
-                        />
+                        <SteeringWheel size={20} />
                       ) : (
                         <Upload size={18} aria-hidden="true" />
                       )}
@@ -983,7 +983,7 @@ export default function AdminManager({
                 isDisabled={writesBlocked || Boolean(cropFile)}
                 className="hero-ui-btn"
               >
-                {busy ? 'Saving...' : 'Save Changes'}
+                {busy && !deletingId ? <SteeringLoader label="Saving…" /> : 'Save Changes'}
               </Button>
               <button
                 type="button"
@@ -1091,7 +1091,7 @@ export default function AdminManager({
                           onClick={() => remove(row.id)}
                           style={{ color: 'var(--error)' }}
                         >
-                          Delete
+                          {deletingId === row.id ? <SteeringLoader label="Deleting…" /> : 'Delete'}
                         </button>
                       )}
                     </td>

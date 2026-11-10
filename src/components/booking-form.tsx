@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Button, toast } from '@heroui/react';
+import { SteeringLoader } from '@/components/steering-loader';
 export function BookingForm({ carId }: { carId: string }) {
   const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -106,7 +107,7 @@ export function BookingForm({ carId }: { carId: string }) {
       </label>
       <div className="full">
         <Button className="hero-ui-btn" type="submit" isPending={busy} fullWidth>
-          {busy ? 'Preparing your enquiry...' : 'Continue to WhatsApp →'}
+          {busy ? <SteeringLoader label="Preparing your enquiry…" /> : 'Continue to WhatsApp →'}
         </Button>
       </div>
     </form>

@@ -1,4 +1,5 @@
 'use client';
+import { SteeringLoader } from '@/components/steering-loader';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
@@ -249,7 +250,11 @@ export default function ImageCropDialog({
           />
         )}
         <span className="crop-guides" aria-hidden="true" />
-        {!ready && !error && <span className="crop-loading">Loading photo…</span>}
+        {!ready && !error && (
+          <span className="crop-loading">
+            <SteeringLoader label="Loading photo…" />
+          </span>
+        )}
       </div>
       <div className="crop-controls">
         <button
@@ -310,7 +315,7 @@ export default function ImageCropDialog({
           disabled={!ready || exporting}
           onClick={() => void confirm()}
         >
-          {exporting ? 'Preparing…' : 'Crop & upload'}
+          {exporting ? <SteeringLoader label="Preparing…" /> : 'Crop & upload'}
         </button>
       </div>
     </dialog>,

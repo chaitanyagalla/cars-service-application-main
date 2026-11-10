@@ -466,20 +466,9 @@
   padding-left: 18px;
   list-style: disc;
 }
-.admin-photo-spinner {
-  animation: admin-photo-spin 1s linear infinite;
-}
-@keyframes admin-photo-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .admin-aside .admin-nav-link {
     transition: none;
-  }
-  .admin-photo-spinner {
-    animation: none;
   }
 }
 @media (max-width: 1100px) {

@@ -6,6 +6,7 @@ import { whatsAppUrl } from '@/lib/whatsapp';
 import type { Car } from '@prisma/client';
 import type { RatedCar } from '@/lib/car-ratings';
 import MobileNavigation from './mobile-navigation';
+import { LoadingCarImage } from './loading-car-image';
 
 export function WhatsAppIcon({ size = 24 }: { size?: number }) {
   return (
@@ -173,7 +174,7 @@ export function CarCard({ car }: { car: RatedCar }) {
   return (
     <article className="car-card panel">
       <Link href={`/cars/${car.slug}`} className="car-photo">
-        <img src={car.imageUrl} alt={`${car.name} self-drive car`} loading="lazy" />
+        <LoadingCarImage src={car.imageUrl} alt={`${car.name} self-drive car`} loading="lazy" />
         {car.featured && <span className="popular">★ Popular</span>}
       </Link>
       <div className="car-info">
