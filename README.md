@@ -1,4 +1,4 @@
-# Universal Self Drive Cars — Next.js + Neon + HeroUI
+# Luxury Self Drive Cars — Next.js + Neon + HeroUI
 
 A full-stack, responsive self-drive rental website modeled on the screenshots supplied by the project owner. Public visitors browse/filter cars, inspect specifications and prices, and send a **car-specific prewritten WhatsApp message**. Staff use a protected admin panel to edit site content and follow up submitted enquiries.
 
@@ -62,7 +62,7 @@ At `/admin` dashboard: fleet/area/lead/review counters, recent enquiries.
 - **Cars:** add/edit/delete cars, publish/unpublish, mark unavailable, price tiers, km/hour charges, photos (HTTPS URL or optional authenticated Cloudinary upload), gallery (URL list), specifications, order and featured label. Car page URLs are generated automatically from the name, with unique suffixes for duplicate names; editing a car keeps its existing URL. Toasts report save/delete results and image upload progress, success or failure. Delete is blocked for cars with enquiries; unpublish instead.
 - **Locations:** create/edit/delete delivery areas, toggle active.
 - **FAQs:** manage and publish question/answer sections.
-- **Testimonials:** draft/edit and publish only genuine reviews with customer permission; optional verification flag. Sample testimonials are _not_ seeded.
+- **Testimonials:** draft/edit and publish genuine reviews with customer permission; optional verification flag. For a design preview, run `npm run db:seed:testimonials` to add six published, clearly labeled sample stories. The script loads `.env.local`, is safe to rerun, and preserves existing edits and publication choices. Samples are never marked verified; manage or unpublish them at `/admin/testimonials`. The normal `db:seed` command does not add testimonials.
 - **Bookings:** inspect saved enquiries, update statuses, export most recent 10,000 to CSV.
 - **Settings:** manage live contact/WhatsApp number, email, address, website headings and Google Maps URL.
 - **Staff Users (admin):** create/edit/delete administrator accounts, deactivate, reset password. There is one staff role: ADMIN. Cannot delete own account. Sign-ins are invalidated when password is changed or account disabled.

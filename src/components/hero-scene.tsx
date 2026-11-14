@@ -8,12 +8,14 @@ type IntroPhase = 'loading' | 'playing' | 'complete' | 'skipped';
 const DRIVE_MS = 4000;
 // The car enters at speed and brakes gently, so the copy settles as the car parks.
 const DRIVE_EASING = 'cubic-bezier(0.25, 0.6, 0.3, 1)';
-// hero-car-right.png has transparent margins; these move the anchor onto the visible bumpers.
-const CAR_REAR_INSET = 0.048;
-const CAR_FRONT_INSET = 0.026;
+// hero-car.webp has transparent margins; these anchor the reveal to the visible bumpers.
+const CAR_REAR_INSET = 0.036;
+const CAR_FRONT_INSET = 0.035;
 // Above 1, the copy stays just behind the car for most of the drive and catches up as it brakes.
 const REVEAL_CATCH_UP = 1.4;
-const HERO_IMAGE_COUNT = 2;
+// The empty scene, the car that drives across it, and the overlay that settles in once it parks.
+// scripts/build-hero-art.cjs cuts all three from the approved mockup.
+const HERO_IMAGE_COUNT = 3;
 
 export default function HeroScene({ children }: { children: ReactNode }) {
   const sceneRef = useRef<HTMLElement>(null);
@@ -115,10 +117,11 @@ export default function HeroScene({ children }: { children: ReactNode }) {
       <div className="hero-art" aria-hidden="true">
         <div className="hero-art-frame">
           <Image
-            src="/images/hero-charminar-background.png"
+            src="/images/hero-plate.webp"
             alt=""
             fill
-            sizes="(max-width: 760px) 100vw, 56vw"
+            unoptimized
+            sizes="(max-width: 900px) 124vw, 68vw"
             loading="eager"
             fetchPriority="high"
             onLoad={handleImageLoad}
@@ -130,13 +133,28 @@ export default function HeroScene({ children }: { children: ReactNode }) {
         <div className="hero-art-frame">
           <div className="hero-car" ref={carRef}>
             <Image
-              src="/images/hero-car-right.png"
+              src="/images/hero-car.webp"
               alt=""
-              width={1774}
-              height={887}
-              sizes="(max-width: 760px) 77vw, 43vw"
+              width={1492}
+              height={824}
+              unoptimized
+              sizes="(max-width: 900px) 78vw, 43vw"
               loading="eager"
               fetchPriority="high"
+              onLoad={handleImageLoad}
+              onError={skipIntro}
+            />
+          </div>
+          {/* The mockup's own pixels around the parked car: its full shadow and the road beside it. */}
+          <div className="hero-parked">
+            <Image
+              src="/images/hero-parked.webp"
+              alt=""
+              width={1816}
+              height={824}
+              unoptimized
+              sizes="(max-width: 900px) 95vw, 52vw"
+              loading="eager"
               onLoad={handleImageLoad}
               onError={skipIntro}
             />
@@ -147,6 +165,7 @@ export default function HeroScene({ children }: { children: ReactNode }) {
       <noscript>
         <style>{`
           .hero .hero-car,
+          .hero .hero-parked,
           .hero [data-hero-reveal],
           .header:has(+ main .hero) :is(.desktop-nav, .head-actions, .mobile-nav) {
             opacity: 1; visibility: visible; animation: none; transform: none;

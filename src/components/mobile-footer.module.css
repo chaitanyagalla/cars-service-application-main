@@ -1,0 +1,183 @@
+.footer {
+  display: none;
+}
+
+@media (max-width: 650px) {
+  .footer {
+    display: block;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .logo {
+    width: 100px;
+    height: 56px;
+    object-fit: contain;
+    mix-blend-mode: screen;
+  }
+  .support {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .support svg {
+    color: var(--copper);
+  }
+  .footer h2 {
+    margin: 0 0 12px;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 6.4vw, 30px);
+    line-height: 1.2;
+    letter-spacing: -0.7px;
+  }
+  .footer h2 em {
+    color: var(--copper);
+  }
+  .description {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .actions a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
+    padding: 10px;
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .actions svg {
+    flex-shrink: 0;
+  }
+  .whatsapp {
+    background: var(--copper);
+    border-color: var(--copper);
+    color: var(--bg);
+  }
+  .call {
+    color: var(--ink);
+    background: var(--panel);
+  }
+  .contacts {
+    display: grid;
+    gap: 4px;
+    margin: 16px 0 20px;
+  }
+  .contacts a {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) 14px;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .contacts span {
+    overflow-wrap: anywhere;
+  }
+  .contacts svg:first-child {
+    color: var(--copper);
+  }
+  .contacts svg:last-child {
+    opacity: 0.6;
+  }
+  .groups {
+    border-top: 1px solid var(--edge);
+  }
+  .groups details {
+    border-bottom: 1px solid color-mix(in srgb, var(--edge) 65%, transparent);
+  }
+  .groups summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 52px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .groups summary::-webkit-details-marker {
+    display: none;
+  }
+  .groups summary svg {
+    color: var(--muted);
+    transition: transform 200ms ease;
+  }
+  .groups details[open] summary svg {
+    transform: rotate(180deg);
+  }
+  .links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+    padding-bottom: 14px;
+  }
+  .links a {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    padding-block: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .bottom {
+    padding: 16px 64px 0 0;
+  }
+  .legal {
+    display: flex;
+    gap: 22px;
+    margin-bottom: 12px;
+  }
+  .legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .bottom p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  .bottom .note {
+    margin-top: 5px;
+    font-size: 10px;
+    color: color-mix(in srgb, var(--muted) 75%, var(--panel2));
+  }
+  .footer .whatsapp:hover {
+    color: var(--bg);
+    background: var(--copper-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .groups summary svg {
+    transition: none;
+  }
+}
