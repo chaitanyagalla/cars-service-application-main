@@ -7,10 +7,8 @@ export default async function Terms() {
   return (
     <CustomerLayout>
       <section className="section">
-        <div className="container" style={{ maxWidth: 820 }}>
-          <h1 className="display" style={{ fontSize: 52 }}>
-            Terms of Service
-          </h1>
+        <div className="container legal-page">
+          <h1 className="display page-title">Terms of Service</h1>
           <p className="sub" style={{ margin: '20px 0 40px' }}>
             Draft for business review — replace with your verified rental contract before launch.
           </p>

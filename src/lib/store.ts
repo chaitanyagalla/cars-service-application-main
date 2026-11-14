@@ -6,7 +6,7 @@ export const getSettings = () =>
     (s) =>
       s ?? {
         id: 'main',
-        businessName: 'Universal Self Drive Cars',
+        businessName: 'Luxury Self Drive Cars',
         whatsappNumber: '919700093666',
         phoneNumber: '+91 97000 93666',
         contactEmail: 'info@universalselfdrivecars.in',

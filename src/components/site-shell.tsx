@@ -6,7 +6,9 @@ import { whatsAppUrl } from '@/lib/whatsapp';
 import type { Car } from '@prisma/client';
 import type { RatedCar } from '@/lib/car-ratings';
 import MobileNavigation from './mobile-navigation';
+import ScrollHidingHeader from './scroll-hiding-header';
 import { LoadingCarImage } from './loading-car-image';
+import MobileFooter from './mobile-footer';
 
 export function WhatsAppIcon({ size = 24 }: { size?: number }) {
   return (
@@ -36,13 +38,13 @@ export function Header({ settings }: { settings: SiteSettings }) {
     ['FAQs', '/faqs'],
   ];
   return (
-    <header className="header">
+    <ScrollHidingHeader>
       <div className="container head-inner">
-        <Link href="/" aria-label="Universal Self Drive Cars home">
+        <Link href="/" aria-label="Luxury Self Drive Cars home">
           <Image
             className="logo"
-            src="/brand.webp"
-            alt="Universal Self Drive Cars"
+            src="/logo.jpeg"
+            alt="Luxury Self Drive Cars"
             width={92}
             height={92}
           />
@@ -58,7 +60,7 @@ export function Header({ settings }: { settings: SiteSettings }) {
           <a className="phone" href={`tel:${settings.phoneNumber.replace(/\D/g, '')}`}>
             <Phone size={20} aria-hidden="true" /> {settings.phoneNumber}
           </a>
-          <Link className="btn btn-gold" href="/cars">
+          <Link className="btn btn-gold header-booking" href="/cars">
             Book Now
           </Link>
           <MobileNavigation links={nav} />
@@ -71,7 +73,7 @@ export function Header({ settings }: { settings: SiteSettings }) {
           </Link>
         ))}
       </nav>
-    </header>
+    </ScrollHidingHeader>
   );
 }
 export function Footer({
@@ -86,11 +88,12 @@ export function Footer({
   return (
     <footer className="footer">
       <div className="container">
+        <MobileFooter settings={settings} cars={cars} locations={locations} />
         <div className="foot-grid">
           <div>
             <Image
               className="logo"
-              src="/brand.webp"
+              src="/logo.jpeg"
               alt="Universal logo"
               width={108}
               height={100}

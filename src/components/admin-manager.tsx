@@ -743,7 +743,7 @@ export default function AdminManager({
             {resource === 'bookings'
               ? 'Only saved enquiry forms appear here. Status changes are manual and do not reserve a vehicle or collect payment. Direct WhatsApp clicks are not tracked.'
               : resource === 'testimonials'
-                ? 'Only publish reviews with genuine customer permission and verification.'
+                ? 'Publish real reviews with customer permission. Seeded sample stories are labeled on the website; edit or unpublish them here. Only mark genuine reviews as verified.'
                 : 'Changes to published content appear on the public website.'}
           </p>
           {resource === 'locations' && (

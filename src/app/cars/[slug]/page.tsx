@@ -169,7 +169,10 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
                   {car.ratingCount === 1 ? 'rental' : 'rentals'}
                 </p>
               )}
-              <p className="detail-lede">{description}</p>
+              <div className="detail-description">
+                <h2 className="detail-mobile-heading">About this car</h2>
+                <p className="detail-lede">{description}</p>
+              </div>
               <ul className="detail-facts" aria-label="Key features">
                 <li>
                   <UsersRound size={18} aria-hidden="true" /> {car.seats} seats
@@ -228,7 +231,9 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <WhatsAppIcon size={22} /> Check availability on WhatsApp
+                    <WhatsAppIcon size={22} />
+                    <span className="detail-action-full">Check availability on WhatsApp</span>
+                    <span className="detail-action-short">WhatsApp us</span>
                   </a>
                 ) : (
                   <a
@@ -237,7 +242,9 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <WhatsAppIcon size={22} /> Ask about similar cars
+                    <WhatsAppIcon size={22} />
+                    <span className="detail-action-full">Ask about similar cars</span>
+                    <span className="detail-action-short">Find similar cars</span>
                   </a>
                 )}
                 <a className="btn btn-outline" href={phoneHref}>
@@ -349,6 +356,21 @@ export default async function CarDetail({ params }: { params: Promise<{ slug: st
           </div>
         </section>
       )}
+      <div className="detail-mobile-booking" aria-label="Quick car enquiry">
+        <div className="detail-mobile-price">
+          <strong>{rupees(car.priceDay)}</strong>
+          <span>per day</span>
+        </div>
+        <a
+          className="btn btn-whatsapp"
+          href={car.available ? `/api/whatsapp/${car.slug}` : alternativesHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <WhatsAppIcon size={20} />
+          {car.available ? 'Check availability' : 'Find similar cars'}
+        </a>
+      </div>
     </CustomerLayout>
   );
 }
