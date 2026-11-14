@@ -1,4 +1,4 @@
--- Initial database structure for Universal Self Drive Cars
+-- Initial database structure for Luxury Self Drive Cars
 CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'ADMIN');
 CREATE TYPE "CarCategory" AS ENUM ('HATCHBACK', 'SEDAN', 'MPV', 'SUV');
 CREATE TYPE "BookingStatus" AS ENUM ('NEW', 'CONTACTED', 'CONFIRMED', 'CLOSED', 'CANCELLED');
@@ -88,7 +88,7 @@ CREATE TABLE "Testimonial" (
 );
 CREATE TABLE "SiteSettings" (
  "id" TEXT NOT NULL DEFAULT 'main',
- "businessName" TEXT NOT NULL DEFAULT 'Universal Self Drive Cars',
+ "businessName" TEXT NOT NULL DEFAULT 'Luxury Self Drive Cars',
  "whatsappNumber" TEXT NOT NULL DEFAULT '919700093666',
  "phoneNumber" TEXT NOT NULL DEFAULT '+91 97000 93666',
  "contactEmail" TEXT NOT NULL DEFAULT 'info@universalselfdrivecars.in',

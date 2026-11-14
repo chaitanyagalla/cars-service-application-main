@@ -21,7 +21,7 @@ export default function CarGallery({ name, images }: { name: string; images: str
         />
       </div>
       {photos.length > 1 && (
-        <div className={styles.controls}>
+        <div className={`${styles.controls} detail-gallery-controls`}>
           <button
             type="button"
             aria-label="Previous car photo"

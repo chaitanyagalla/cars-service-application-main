@@ -5,7 +5,7 @@ import { SteeringWheel } from '@/components/steering-loader';
 
 export function AdminToasts() {
   return (
-    <Toast.Provider placement="top end" maxVisibleToasts={3} className="dark">
+    <Toast.Provider placement="top end" maxVisibleToasts={3}>
       {({ toast }) => {
         const { title, description, indicator, isLoading, variant, actionProps } = toast.content;
         return (

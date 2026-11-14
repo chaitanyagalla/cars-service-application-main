@@ -24,7 +24,7 @@ export default function MobileNavigation({ links }: { links: string[][] }) {
       }
     }
     function resize() {
-      if (window.innerWidth > 760) setOpen(false);
+      if (window.innerWidth > 900) setOpen(false);
     }
     document.addEventListener('pointerdown', dismiss);
     document.addEventListener('keydown', escape);

@@ -20,7 +20,7 @@ export function SteeringWheel({ size = 20 }: { size?: number }) {
         strokeLinecap="round"
       />
       <circle cx="32" cy="33" r="9" fill="currentColor" />
-      <path d="M28 8H36" stroke="var(--gold, #e99a08)" strokeWidth="4" strokeLinecap="round" />
+      <path d="M28 8H36" stroke="var(--gold, #d1a079)" strokeWidth="4" strokeLinecap="round" />
     </svg>
   );
 }

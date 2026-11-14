@@ -15,7 +15,7 @@ import {
   type ReactNode,
 } from 'react';
 
-const ROTATION_INTERVAL = 5000;
+const ROTATION_INTERVAL = 2500;
 const TRANSITION_DURATION = 900;
 
 export default function FleetCarousel({ children }: { children: ReactNode }) {
@@ -131,7 +131,7 @@ export default function FleetCarousel({ children }: { children: ReactNode }) {
       }}
     >
       <p className="sr-only" id={instructionsId}>
-        Cars rotate automatically every five seconds. Hover or keyboard focus pauses rotation. Use
+        Cars rotate automatically every 2.5 seconds. Hover or keyboard focus pauses rotation. Use
         the side arrows, pagination buttons, left and right arrow keys, or swipe to explore the
         fleet.
       </p>

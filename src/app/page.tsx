@@ -16,6 +16,7 @@ import { CarCard } from '@/components/site-shell';
 import FleetCarousel from '@/components/fleet-carousel';
 import BookingJourney from '@/components/booking-journey';
 import HeroScene from '@/components/hero-scene';
+import Testimonials from '@/components/testimonials';
 import { getCars, getSettings, getLocations, getFaqs, getTestimonials } from '@/lib/store';
 export const dynamic = 'force-dynamic';
 export default async function HomePage() {
@@ -130,34 +131,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      {reviews.length > 0 && (
-        <section className="section" style={{ background: 'var(--panel2)' }}>
-          <div className="container">
-            <div className="center">
-              <span className="eyebrow">Customer Reviews</span>
-              <h2 className="display">
-                What Our <span className="text-accent">Customers Say</span>
-              </h2>
-              <p className="sub">Customer feedback shared with permission.</p>
-            </div>
-            <div className="review-grid">
-              {reviews.slice(0, 6).map((r) => (
-                <div className="panel review" key={r.id}>
-                  <div className="stars">{'★'.repeat(r.rating)}</div>
-                  <p>“{r.text}”</p>
-                  <footer>
-                    <strong>{r.name}</strong>
-                    <br />
-                    <span>
-                      {r.area} {r.verified ? ' • Verified by staff' : ''}
-                    </span>
-                  </footer>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
       <section className="section faq-section" id="faqs" aria-labelledby="faq-heading">
         <div className="container">
           <div className="center">
@@ -182,6 +155,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      <Testimonials reviews={reviews} />
       <section className="office-section" id="office" aria-labelledby="office-heading">
         <div className="container">
           <div className="office-heading">
