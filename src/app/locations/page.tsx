@@ -1,6 +1,6 @@
 import CustomerLayout from '@/components/customer-layout';
+import { LocationCard } from '@/components/site-shell';
 import { getLocations, getSettings } from '@/lib/store';
-import { MapPin } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Pickup & Delivery Areas' };
 export default async function LocationsPage() {
@@ -20,11 +20,7 @@ export default async function LocationsPage() {
           </div>
           <div className="location-grid">
             {areas.map((a) => (
-              <div className="panel location-card" key={a.id}>
-                <MapPin size={28} />
-                <strong>{a.name}</strong>
-                <span>{a.subtitle}</span>
-              </div>
+              <LocationCard key={a.id} name={a.name} subtitle={a.subtitle} />
             ))}
           </div>
           <div className="center" style={{ marginTop: 35 }}>
