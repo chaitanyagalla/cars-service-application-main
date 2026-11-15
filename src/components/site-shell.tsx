@@ -9,6 +9,7 @@ import MobileNavigation from './mobile-navigation';
 import ScrollHidingHeader from './scroll-hiding-header';
 import { LoadingCarImage } from './loading-car-image';
 import MobileFooter from './mobile-footer';
+import WhatsAppContact from './whatsapp-contact';
 
 export function WhatsAppIcon({ size = 24 }: { size?: number }) {
   return (
@@ -158,19 +159,9 @@ export function Footer({
 }
 export function FloatingWhatsApp({ phone }: { phone: string }) {
   return (
-    <a
-      className="floating-wa"
-      href={`https://wa.me/${phone.replace(/\D/g, '')}`}
-      aria-label="Contact us on WhatsApp"
-      aria-describedby="floating-whatsapp-tooltip"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <WhatsAppContact phone={phone}>
       <WhatsAppIcon size={30} />
-      <span className="floating-wa-tooltip" id="floating-whatsapp-tooltip" role="tooltip">
-        Let&apos;s talk
-      </span>
-    </a>
+    </WhatsAppContact>
   );
 }
 export function CarCard({ car }: { car: RatedCar }) {
