@@ -441,18 +441,39 @@ img {
 .center {
   text-align: center;
 }
+/* Section kicker: tracked caps between copper hairlines, the same voice as .journey-eyebrow. */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  border: 1px solid var(--edge);
-  background: transparent;
-  border-radius: 999px;
+  justify-content: center;
+  gap: 12px;
+  max-width: 100%;
   color: var(--ink);
-  padding: 5px 15px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   margin-bottom: 14px;
+}
+.eyebrow::before,
+.eyebrow::after {
+  content: '';
+  width: 36px;
+  height: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, transparent, var(--gold));
+}
+.eyebrow::after {
+  /* Letter-spacing trails the last letter; pull the rule back so both gaps match. */
+  margin-left: -0.18em;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.eyebrow svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--gold);
 }
 .display {
   font-family: var(--font-display), 'Arial Narrow', sans-serif;
@@ -707,14 +728,31 @@ img {
   max-width: 700px;
 }
 .hero .hero-eyebrow {
+  justify-content: flex-start;
+  gap: 9px;
+  border: 1px solid var(--edge);
+  background: transparent;
+  border-radius: 999px;
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 600;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
   margin-bottom: 18px;
+}
+.hero .hero-eyebrow::before,
+.hero .hero-eyebrow::after {
+  content: none;
+}
+.hero .hero-eyebrow svg {
+  width: 16px;
+  height: 16px;
 }
 .hero h1 {
   font-size: clamp(34px, 3.85vw, 60px);
-  font-weight: 700;
+  /* Georgia ships only regular and bold, so regular is the one lighter step available. */
+  font-weight: 545;
   line-height: 1.04;
   letter-spacing: -0.025em;
   margin: 0 0 20px;
@@ -820,19 +858,7 @@ img {
   padding-inline: 44px;
 }
 .fleet-section .fleet-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
   margin: 0 0 14px;
-  padding: 5px 28px;
-  border: 0;
-  background: var(--orange-soft);
-  color: var(--ink);
-  font-size: clamp(16px, 1.4vw, 22px);
-  font-weight: 700;
-}
-.fleet-eyebrow svg {
-  color: var(--gold);
 }
 .fleet-section h2 {
   font-size: clamp(36px, 4vw, 66px);
@@ -1717,19 +1743,71 @@ img {
   grid-template-columns: repeat(5, 1fr);
   gap: 14px;
 }
+/* A card with no subtitle keeps its name centred instead of leaving a gap below it. */
 .location-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   text-align: center;
   padding: 22px 8px;
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  transition: border-color 220ms ease;
 }
-.location-card svg {
+/* Copper hairline on the top edge; it runs the full width on hover. */
+.location-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.55;
+  transform: scaleX(0.4);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.location-card:hover {
+  border-color: var(--gold);
+}
+.location-card:hover::before {
+  opacity: 1;
+  transform: scaleX(1);
+}
+/* The pin sits in the same round marker the booking journey uses for its steps. */
+.location-pin {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--tint);
   color: var(--gold);
-  margin: 0 auto 12px;
+  transition:
+    background 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease;
+}
+.location-pin svg {
+  width: 18px;
+  height: 18px;
+}
+.location-card:hover .location-pin {
+  background: var(--gold);
+  color: var(--bg);
+  box-shadow: 0 0 0 5px var(--orange-soft);
 }
 .location-card strong {
+  max-width: 100%;
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
-.location-card span {
-  display: block;
+.location-area {
+  max-width: 100%;
   color: var(--muted);
   font-size: 12px;
 }
@@ -1766,19 +1844,24 @@ img {
   flex: 0 0 calc((100% - 60px) / 6);
   min-width: 0;
   min-height: 108px;
-  padding: 15px 10px;
+  /* 13px keeps the card at its 108px minimum now that the pin sits in a 32px marker. */
+  padding: 13px 10px;
   border-radius: 14px;
-  background: var(--panel);
 }
-.delivery-section .location-card svg {
+.delivery-section .location-pin {
+  width: 32px;
+  height: 32px;
   margin-bottom: 8px;
 }
+.delivery-section .location-pin svg {
+  width: 16px;
+  height: 16px;
+}
 .delivery-section .location-card strong {
-  display: block;
   font-size: 13px;
   line-height: 1.4;
 }
-.delivery-section .location-card span {
+.delivery-section .location-area {
   margin-top: 4px;
   font-size: 11px;
   line-height: 1.5;
@@ -2193,17 +2276,7 @@ img {
     font-size: clamp(12px, 1vw, 14px);
   }
   .fleet-section .fleet-eyebrow {
-    gap: 9px;
     margin: 0 0 18px;
-    padding: 7px 14px;
-    border: 1px solid var(--edge);
-    background: transparent;
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .fleet-section .fleet-eyebrow svg {
-    width: 16px;
-    height: 16px;
   }
 }
 .footer {
@@ -3637,7 +3710,7 @@ body:has(.floating-wa-card:popover-open) .floating-wa-tooltip {
     width: 55%;
   }
   .hero h1 {
-    font-size: clamp(31px, 3.55vw, 40px);
+    font-size: clamp(30px, calc(3.55vw - 1px), 39px);
   }
   .hero .sub {
     max-width: 470px;
@@ -3754,7 +3827,7 @@ body:has(.floating-wa-card:popover-open) .floating-wa-tooltip {
     max-width: none;
   }
   .hero h1 {
-    font-size: clamp(35px, 6.3vw, 47px);
+    font-size: clamp(34px, calc(6.3vw - 1px), 46px);
     margin-bottom: 20px;
   }
   .hero .hero-eyebrow {
@@ -3834,15 +3907,6 @@ body:has(.floating-wa-card:popover-open) .floating-wa-tooltip {
   .fleet-section #fleet-heading {
     font-size: clamp(24px, 6.4vw, 30px);
     letter-spacing: -1px;
-  }
-  .fleet-section .fleet-eyebrow {
-    padding: 6px 14px;
-    gap: 7px;
-    font-size: 12px;
-  }
-  .fleet-section .fleet-eyebrow svg {
-    width: 16px;
-    height: 16px;
   }
   .fleet-section .fleet-subtitle {
     max-width: 370px;
@@ -4019,7 +4083,10 @@ body:has(.floating-wa-card:popover-open) .floating-wa-tooltip {
   .catalog-categories button {
     transition: none;
   }
-  .office-contact-icon {
+  .office-contact-icon,
+  .location-card,
+  .location-card::before,
+  .location-pin {
     transition: none;
   }
   .journey-tab::after,
@@ -4072,9 +4139,7 @@ body:has(.floating-wa-card:popover-open) .floating-wa-tooltip {
 .footer a:hover {
   color: var(--orange-text);
 }
-.hero-eyebrow svg,
-.hero-benefits svg,
-.location-card > svg {
+.hero-benefits svg {
   color: var(--gold);
 }
 .rating {

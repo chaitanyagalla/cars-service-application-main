@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Keep local dev running: the upgrade CLI uses a separate npm cache where
+    // Windows Application Control can block its downloaded native SWC binary.
+    agentUpgrade: process.env.NODE_ENV === 'development' ? false : 'security',
+  },
   async headers() {
     return [
       {

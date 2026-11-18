@@ -12,7 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import CustomerLayout from '@/components/customer-layout';
-import { CarCard } from '@/components/site-shell';
+import { CarCard, LocationCard } from '@/components/site-shell';
 import FleetCarousel from '@/components/fleet-carousel';
 import BookingJourney from '@/components/booking-journey';
 import HeroScene from '@/components/hero-scene';
@@ -85,7 +85,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="center">
             <span className="eyebrow fleet-eyebrow">
-              <Star size={24} fill="currentColor" aria-hidden="true" /> Top Rated Cars
+              <Star size={14} fill="currentColor" aria-hidden="true" /> Top Rated Cars
             </span>
             <h2 className="display" id="fleet-heading">
               Explore Our <span>Car Fleet</span>
@@ -117,11 +117,7 @@ export default async function HomePage() {
           </div>
           <div className="location-grid">
             {locations.map((l) => (
-              <div className="panel location-card" key={l.id}>
-                <MapPin size={20} />
-                <strong>{l.name}</strong>
-                <span>{l.subtitle}</span>
-              </div>
+              <LocationCard key={l.id} name={l.name} subtitle={l.subtitle} />
             ))}
           </div>
           <div className="center delivery-action">
