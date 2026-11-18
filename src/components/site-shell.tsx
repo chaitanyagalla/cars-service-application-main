@@ -164,6 +164,17 @@ export function FloatingWhatsApp({ phone }: { phone: string }) {
     </WhatsAppContact>
   );
 }
+export function LocationCard({ name, subtitle }: { name: string; subtitle?: string | null }) {
+  return (
+    <div className="panel location-card">
+      <span className="location-pin">
+        <MapPin aria-hidden="true" />
+      </span>
+      <strong>{name}</strong>
+      {subtitle?.trim() ? <span className="location-area">{subtitle}</span> : null}
+    </div>
+  );
+}
 export function CarCard({ car }: { car: RatedCar }) {
   return (
     <article className="car-card panel">
